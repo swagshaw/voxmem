@@ -45,7 +45,23 @@ def main():
                     help="e.g. 32k, or 32k_paralinguistic_information")
     ap.add_argument("--out", required=True)
     ap.add_argument("--model", default="abstain",
-                    help="'abstain', or 'openai:<model id>'")
+                    help="'abstain', 'openai:<model id>', 'gemini:<model id>', "
+                         "or a local model name used with --adapter")
+    ap.add_argument("--adapter",
+                    help="module name or path to a .py exposing "
+                         "run(messages, model_dir=..., max_new_tokens=...); "
+                         "makes --model the local model's name")
+    ap.add_argument("--model-dir", help="weights directory passed to the adapter")
+    ap.add_argument("--max-new-tokens", type=int, default=256)
+    ap.add_argument("--staging-dir",
+                    help="where to stage a item's clips for the adapter "
+                         "(default: the system temp directory)")
+    ap.add_argument("--fold-system", dest="fold_system", action="store_true",
+                    default=None,
+                    help="put the system prompt in the first user message; the "
+                         "default follows the model's known behaviour")
+    ap.add_argument("--native-system", dest="fold_system", action="store_false",
+                    help="force a real system turn")
     ap.add_argument("--repo", default=vdata.DEFAULT_REPO)
     ap.add_argument("--base-url", default=None,
                     help="for an OpenAI-compatible server other than OpenAI's")
@@ -60,11 +76,29 @@ def main():
     ap.add_argument("--token", default=None, help="Hugging Face token")
     args = ap.parse_args()
 
-    kwargs = {}
-    if args.model.startswith("openai:"):
-        kwargs = {"base_url": args.base_url, "api_key": args.api_key}
-    model = vmodels.build(args.model, **kwargs)
+    if args.adapter:
+        from voxmembench import local_adapters
+
+        if args.model in local_adapters.UNSUPPORTED:
+            raise SystemExit("%s: %s" % (args.model,
+                                         local_adapters.UNSUPPORTED[args.model]))
+        model = local_adapters.LocalAdapterModel(
+            args.adapter, args.model, model_dir=args.model_dir,
+            max_new_tokens=args.max_new_tokens, staging_dir=args.staging_dir)
+        delivery = model.delivery
+        if args.fold_system is not None:
+            delivery = "folded" if args.fold_system else "native"
+    else:
+        kwargs = {}
+        if args.model.startswith(("openai:", "gemini:")):
+            kwargs = {"base_url": args.base_url, "api_key": args.api_key,
+                      "max_tokens": args.max_new_tokens}
+        model = vmodels.build(args.model, **kwargs)
+        delivery = "folded" if args.fold_system else "native"
+
     prompt = vdata.system_prompt(args.allow_abstention)
+    fold = delivery == "folded"
+    print("system prompt delivery: %s" % delivery)
 
     done = already_done(args.out)
     if done:
@@ -83,8 +117,9 @@ def main():
             record = {key: item[key] for key in KEEP}
             record["model"] = getattr(model, "name", args.model)
             record["allow_abstention"] = args.allow_abstention
+            record["system_prompt_delivery"] = delivery
             try:
-                messages = vdata.to_messages(item, prompt)
+                messages = vdata.to_messages(item, prompt, fold_system=fold)
                 record["n_audio_clips"] = vdata.count_audio(messages)
                 record["response"] = model(messages)
             except Exception as exc:                        # noqa: BLE001

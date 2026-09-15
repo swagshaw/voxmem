@@ -116,16 +116,27 @@ def _audio_part(audio):
     return part
 
 
-def to_messages(item, prompt):
+def to_messages(item, prompt, fold_system=False):
     """Build the provider-neutral prompt for one item.
 
     Returns a list of {"role", "content"} where content is a list of parts,
     each either {"type": "text", "text": ...} or {"type": "audio", ...}.
     The model is never given a transcript of the user's speech: `question_text`
     and the session transcripts are for analysis, not for the prompt.
+
+    Some chat templates drop the system role outright. For those, pass
+    fold_system=True: the prompt becomes the first text block of the first user
+    message instead, ahead of that session's timestamp. Which of the two a run
+    used has to travel with the numbers -- a table that mixes them silently is
+    not comparable, because the abstention contract lives in that prompt.
     """
-    messages = [{"role": "system",
-                 "content": [{"type": "text", "text": prompt}]}]
+    messages = []
+    pending = None
+    if fold_system:
+        pending = prompt
+    else:
+        messages.append({"role": "system",
+                         "content": [{"type": "text", "text": prompt}]})
 
     for session in item["sessions"]:
         first_user_turn = True
@@ -137,6 +148,9 @@ def to_messages(item, prompt):
                 })
                 continue
             content = []
+            if pending is not None:
+                content.append({"type": "text", "text": pending})
+                pending = None
             if first_user_turn:
                 content.append({
                     "type": "text",

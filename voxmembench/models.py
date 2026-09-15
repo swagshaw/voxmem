@@ -6,6 +6,7 @@ ship here; write your own for anything else and pass it to `run_voxmembench`.
 """
 import base64
 import io
+import os
 
 
 def to_wav_bytes(part):
@@ -77,6 +78,58 @@ class OpenAIAudioModel:
         return (response.choices[0].message.content or "").strip()
 
 
+class GeminiAudioModel:
+    """Google Gemini, which takes audio natively as inline parts.
+
+    Gemini has no system role in the chat turns: the prompt goes in
+    `system_instruction`, so no folding is needed.
+    """
+
+    def __init__(self, model, api_key=None, max_tokens=256, temperature=0.0):
+        from google import genai
+
+        self.name = model
+        self.model = model
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.client = genai.Client(api_key=api_key or os.environ.get("GOOGLE_API_KEY"))
+
+    def _convert(self, messages):
+        from google.genai import types
+
+        system = None
+        contents = []
+        for message in messages:
+            if message["role"] == "system":
+                system = " ".join(p["text"] for p in message["content"]
+                                  if p["type"] == "text")
+                continue
+            parts = []
+            for part in message["content"]:
+                if part["type"] == "text":
+                    parts.append(types.Part.from_text(text=part["text"]))
+                else:
+                    parts.append(types.Part.from_bytes(
+                        data=to_wav_bytes(part), mime_type="audio/wav"))
+            # Gemini names the assistant role "model"
+            role = "model" if message["role"] == "assistant" else "user"
+            contents.append(types.Content(role=role, parts=parts))
+        return system, contents
+
+    def __call__(self, messages):
+        from google.genai import types
+
+        system, contents = self._convert(messages)
+        config = types.GenerateContentConfig(
+            max_output_tokens=self.max_tokens,
+            temperature=self.temperature,
+            system_instruction=system,
+        )
+        response = self.client.models.generate_content(
+            model=self.model, contents=contents, config=config)
+        return (response.text or "").strip()
+
+
 def build(spec, **kwargs):
     """Resolve a --model string.
 
@@ -87,6 +140,10 @@ def build(spec, **kwargs):
         return AbstainModel()
     if spec.startswith("openai:"):
         return OpenAIAudioModel(spec[len("openai:"):], **kwargs)
+    if spec.startswith("gemini:"):
+        kwargs.pop("base_url", None)
+        return GeminiAudioModel(spec[len("gemini:"):], **kwargs)
     raise ValueError(
-        "unknown model %r; pass 'abstain', 'openai:<model>', or import "
-        "run_voxmembench and hand it your own callable" % spec)
+        "unknown model %r; pass 'abstain', 'openai:<model>', 'gemini:<model>', "
+        "--adapter for a local model, or import run_voxmembench and hand it "
+        "your own callable" % spec)
