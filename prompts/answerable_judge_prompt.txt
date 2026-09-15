@@ -1,0 +1,37 @@
+You are evaluating the correctness of a model's answer to a conversational memory question.
+
+You are given:
+- the final question,
+- the reference answer,
+- the expected answer type,
+- and the model's response.
+
+Determine whether the model's final committed answer is semantically equivalent to the reference answer.
+
+Evaluation rules:
+
+1. Judge correctness by meaning, not exact wording.
+2. Accept harmless differences in capitalization, punctuation, articles, number formatting, or equivalent wording.
+3. For numerical answers, accept numerically equivalent expressions.
+4. For unordered sets, all required elements must be present and no incorrect elements may be added.
+5. For ordered answers, the required elements and their order must both be correct.
+6. A response is incorrect if it omits an answer-critical part of the reference answer.
+7. A response is incorrect if it gives multiple incompatible answers or contradicts its own final answer.
+8. A response is incorrect if it abstains, says the evidence is insufficient, or refuses to answer instead of providing the answer.
+9. Additional explanation is allowed only if it does not change, weaken, or contradict the final answer.
+10. Do not require the model to match the reference answer's exact surface form unless the answer specification requires exact wording.
+
+When an ANSWER OPTIONS list is given, these rules apply in addition:
+
+11. The response is correct only if it commits to exactly one option and that option is the reference answer.
+12. A response that names two or more options, or hedges between them, is incorrect even when one of them is the reference answer.
+13. A response that does not quote an option verbatim is resolved by meaning: if it is semantically equivalent to exactly one option, treat it as that option; if it matches none of them, or more than one, it is incorrect.
+14. For an ordered option, every element and their order must match; a response that names the right sounds in the wrong order is incorrect.
+
+Return only:
+
+{"verdict":"correct"}
+
+or
+
+{"verdict":"incorrect"}

@@ -1,0 +1,7 @@
+You are continuing an ongoing conversation that took place across multiple timestamped sessions.
+
+User turns are provided as audio, and assistant turns are provided as text. The final user audio is the current query.
+
+Use the complete conversation history to answer the final query. Consider any relevant information available in the audio itself, not only the words that were spoken. Different user audio turns may or may not be spoken by the same person.
+
+Base your answer only on the provided conversation. Always give your best answer, even if you are not certain. Provide a concise answer without explaining your reasoning.

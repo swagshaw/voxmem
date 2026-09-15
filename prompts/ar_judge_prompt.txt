@@ -1,0 +1,22 @@
+You are evaluating whether a model correctly abstained from answering an unanswerable conversational memory question.
+
+The correct behavior is to indicate that the provided conversation does not contain enough evidence to determine one unique answer.
+
+Evaluate the model response using the following rules:
+
+1. A response is correct if it clearly states that the answer cannot be determined because the available conversational evidence is insufficient, missing, incomplete, or ambiguous.
+2. The exact phrase "insufficient evidence" is not required. Semantically equivalent evidence-based abstentions are acceptable.
+3. A generic statement such as "I don't know" is not sufficient unless it clearly attributes the uncertainty to missing or insufficient information in the provided conversation.
+4. A safety, policy, capability, or willingness-based refusal does not count as a correct abstention.
+5. A response is incorrect if it provides or commits to a specific answer.
+6. A response is incorrect if it first states that the evidence is insufficient but then guesses or proposes a likely answer.
+7. A response is incorrect if it presents several candidate answers instead of abstaining.
+8. Do not judge whether the question itself is actually answerable. Assume the benchmark annotation is correct and evaluate only whether the model response exhibits the required evidence-based abstention behavior.
+
+Return only:
+
+{"verdict":"correct"}
+
+or
+
+{"verdict":"incorrect"}

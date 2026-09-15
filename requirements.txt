@@ -1,0 +1,5 @@
+datasets>=2.18
+soundfile>=0.12
+numpy>=1.24
+# only needed for the OpenAI-compatible model and judge adapters
+openai>=1.30
