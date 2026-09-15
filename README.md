@@ -35,6 +35,8 @@ This repository contains the **evaluation code**. The data lives on the Hub:
 - [Running Evaluation](#running-evaluation)
 - [Scoring](#scoring)
 - [What the model is given](#what-the-model-is-given)
+- [Local models](#local-models)
+- [Running a matrix](#running-a-matrix)
 - [Adding New Models](#adding-new-models)
 - [Benchmark design](#benchmark-design)
 - [Citation](#citation)
@@ -106,7 +108,10 @@ python run_voxmembench.py --config 32k \
 | Flag | |
 |---|---|
 | `--config` | which slice to run |
-| `--model` | `abstain`, or `openai:<model id>` |
+| `--model` | `abstain`, `openai:<id>`, `gemini:<id>`, or a local model name with `--adapter` |
+| `--adapter` | module or `.py` path exposing `run(messages, model_dir, max_new_tokens)` |
+| `--model-dir` | weights directory handed to the adapter |
+| `--stop-after-seconds` | stop cleanly between items before a scheduler's time limit |
 | `--allow-abstention` | use the system prompt that permits "insufficient evidence"; **required** for the refusal stratum to mean anything |
 | `--base-url` | point at any OpenAI-compatible server (vLLM, a local gateway, another provider) |
 | `--limit`, `--streaming`, `--token` | |
@@ -154,6 +159,78 @@ evidence type x memory operation
 > `--judge exact-match` needs no API key, but only grades `categorical`,
 > `yes_no` and `number` items and grades them more strictly than the real
 > metric. Use it for smoke tests, not for numbers you intend to publish.
+
+## Local models
+
+A local adapter is one function, with clips passed as paths on disk:
+
+```python
+def run(messages, model_dir=None, max_new_tokens=200):
+    # {"role": "system",    "content": "<text>"}
+    # {"role": "user",      "content": [{"type": "audio", "audio": "<path>"},
+    #                                   {"type": "text",  "text": "<text>"}]}
+    # {"role": "assistant", "content": "<text>"}
+    return {"ok": True, "response_text": "..."}
+```
+
+```bash
+python run_voxmembench.py --config 32k --model qwen3omni \
+    --adapter /path/to/qwen3omni_adapter.py --model-dir /path/to/weights \
+    --allow-abstention --out predictions_qwen3omni_32k.jsonl
+```
+
+The runner stages that item's clips into a temp directory around the call and
+removes them afterwards. Models usually need their own environment, so drive
+one model per process rather than importing several into one.
+
+### The system prompt is not safely native
+
+Many chat templates convert messages with a line like
+`if msg["role"] == "system": continue`. The prompt then silently disappears —
+and with it the abstention contract the 520 refusal items are scored against,
+so those items fail in a way that looks like the model rather than the harness.
+
+`voxmembench/local_adapters.py` lists the models whose adapters were checked to
+render a real system turn. Anything else gets the prompt folded into the first
+user message instead, ahead of that session's timestamp. Every prediction
+records `system_prompt_delivery` as `native` or `folded`, because a cross-model
+table that mixes the two silently is not comparable. Override with
+`--fold-system` / `--native-system` if your adapter differs.
+
+Two models are refused outright: `glm4` (NaN generation on multi-audio input)
+and `minicpm` (multi-audio KV cache mismatch). Every item here has many clips.
+
+## Running a matrix
+
+```bash
+# one model over several configs, scoring each
+scripts/run_matrix.sh --model gemini:gemini-2.5-flash \
+    --configs 8k,16k,32k,64k --judge openai:gpt-4o-mini
+```
+
+On a cluster, one array task per (model, config) shard:
+
+```bash
+cat > models.tsv <<'TSV'
+qwen3omni   /path/qwen3omni_adapter.py   /path/to/weights
+phi4        /path/phi4_adapter.py        /path/to/weights
+gemini:gemini-2.5-flash   -              -
+TSV
+
+scripts/submit_slurm.sh --models models.tsv --configs 32k,64k \
+    --partition gpu-a100 --time 04:00:00 --mem 80G --dry-run
+```
+
+`--dry-run` prints the task table and the `sbatch` line without submitting —
+worth doing first, since a wrong table submits the wrong work at scale. The
+submitter passes `--stop-after-seconds` set to the time limit minus a margin,
+so a shard stops between items instead of being killed part-way through one;
+resubmitting the same command continues it.
+
+Sharding by config rather than by model keeps 64K — a few hundred clips and
+tens of minutes of audio per item — from holding a whole model's progress
+hostage. The cost is reloading weights once per config instead of once per
+model, which is minutes against hours.
 
 ## What the model is given
 

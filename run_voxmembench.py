@@ -71,6 +71,10 @@ def main():
                          "evidence'. Required for the answer-refusal stratum "
                          "to mean anything.")
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--stop-after-seconds", type=int, default=0,
+                    help="stop cleanly between items once this much wall clock "
+                         "has passed, so a scheduler's time limit cannot kill "
+                         "the process mid-item. 0 disables.")
     ap.add_argument("--streaming", action="store_true",
                     help="stream the config instead of downloading it whole")
     ap.add_argument("--token", default=None, help="Hugging Face token")
@@ -109,11 +113,16 @@ def main():
 
     written = 0
     failed = 0
+    stopped_early = False
     started = time.time()
     with open(args.out, "a") as out:
         for item in items:
             if item["item_id"] in done:
                 continue
+            if args.stop_after_seconds and \
+                    time.time() - started >= args.stop_after_seconds:
+                stopped_early = True
+                break
             record = {key: item[key] for key in KEEP}
             record["model"] = getattr(model, "name", args.model)
             record["allow_abstention"] = args.allow_abstention
@@ -136,6 +145,9 @@ def main():
                       % (written, failed, rate), flush=True)
 
     print("wrote %d items (%d failed) to %s" % (written, failed, args.out))
+    if stopped_early:
+        print("stopped at the --stop-after-seconds mark with items left; "
+              "rerun the same command to continue")
     if failed:
         print("failed items kept a null response and an error field; rerun to "
               "retry them after deleting those lines")
