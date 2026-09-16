@@ -249,9 +249,10 @@ assistant  ...
 user       "Session timestamp: 2025-12-15 00:49"  +  <question audio>
 ```
 
-**The model never sees a transcript of the user's speech.** `question_text` and
-the session texts in the dataset exist for analysis and for the judge;
-`to_messages` does not put them in the prompt.
+**The runner never puts the transcripts in the prompt.** Every user turn in the
+dataset ships its words alongside its audio, for analysis and for the text-only
+condition; feeding them to a model that is supposed to be listening measures
+something else. `to_messages` passes audio only.
 
 The four prompt files under `prompts/` mirror the dataset repository and are
 the contract the reference numbers were produced under — changing them changes
