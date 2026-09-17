@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoxMemBench</title>
+<meta name="description" content="A benchmark for long-term spoken conversational memory: 799 questions at four context lengths, where three of the four evidence types live in the audio signal rather than in the words.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+<style>
+:root{
+  --ink:#16181d; --muted:#5c6370; --line:#e3e6ec; --bg:#ffffff; --soft:#f6f7f9;
+  --accent:#2f5fd0; --accent-soft:#eaf0fd;
+  --semantic:#6b7280; --speaker:#2f6f4f; --para:#a4501f; --env:#3b5f9e;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd{font-family:var(--mono);font-size:.9em}
+
+/* hero */
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fbfcfe,#fff)}
+header .wrap{padding-block:56px 44px}
+h1{font-size:2.5rem;line-height:1.15;margin:0 0 .35em;letter-spacing:-.02em}
+h1 .sub{display:block;font-size:1.05rem;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:.5em}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 0}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;
+  border:1px solid var(--line);background:#fff;font-size:.86rem;color:var(--ink);
+}
+.badge:hover{border-color:var(--accent);text-decoration:none}
+.badge.solid{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* key numbers */
+.figures{display:flex;flex-wrap:wrap;gap:0;margin:34px 0 0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.fig{flex:1 1 150px;padding:16px 18px;border-right:1px solid var(--line);background:#fff}
+.fig:last-child{border-right:0}
+.fig b{display:block;font-size:1.5rem;letter-spacing:-.01em}
+.fig span{color:var(--muted);font-size:.82rem}
+
+section{padding-block:44px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{font-size:1.45rem;margin:0 0 .6em;letter-spacing:-.01em}
+h3{font-size:1.05rem;margin:1.9em 0 .5em}
+p{margin:0 0 1em}
+.lede{font-size:1.08rem}
+
+table{width:100%;border-collapse:collapse;margin:1.1em 0;font-size:.93rem}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+.scroll{overflow-x:auto}
+
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:baseline}
+.d-sem{background:var(--semantic)} .d-spk{background:var(--speaker)}
+.d-par{background:var(--para)} .d-env{background:var(--env)}
+
+pre{
+  background:#14161b;color:#e6e9ef;padding:15px 17px;border-radius:9px;overflow-x:auto;
+  font-family:var(--mono);font-size:.85rem;line-height:1.6;margin:1.1em 0
+}
+pre .c{color:#8b93a3}
+pre .s{color:#9ecbff}
+
+.note{
+  border-left:3px solid var(--accent);background:var(--accent-soft);
+  padding:13px 17px;border-radius:0 8px 8px 0;margin:1.3em 0;font-size:.94rem
+}
+.note b{font-weight:600}
+
+figure{margin:1.6em 0}
+figcaption{color:var(--muted);font-size:.86rem;margin-top:.7em}
+svg{max-width:100%;height:auto;display:block}
+
+footer{padding-block:34px;color:var(--muted);font-size:.88rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between}
+
+@media (max-width:640px){
+  header .wrap{padding-block:40px 32px}
+  h1{font-size:1.95rem}
+  .fig{flex-basis:50%;border-right:0;border-bottom:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>VoxMemBench
+      <span class="sub">Does a spoken-dialogue system remember what it <em>heard</em>?</span>
+    </h1>
+    <p class="lede" style="max-width:62ch;margin-bottom:0">
+      A model is given many time-separated sessions of a conversation — every user
+      turn as audio, every assistant turn as text — and then a spoken question
+      whose answer is somewhere in that history.
+    </p>
+    <div class="badges">
+      <a class="badge solid" href="https://huggingface.co/datasets/AudioMemory/voxmembench">🤗 Dataset</a>
+      <a class="badge" href="https://github.com/swagshaw/voxmem">Code</a>
+      <span class="badge">CC BY-NC 4.0</span>
+      <span class="badge">English</span>
+    </div>
+
+    <div class="figures">
+      <div class="fig"><b>799</b><span>questions</span></div>
+      <div class="fig"><b>3,196</b><span>items over 4 lengths</span></div>
+      <div class="fig"><b>34,743</b><span>sessions</span></div>
+      <div class="fig"><b>177 h</b><span>of speech</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <h2>Why audio</h2>
+  <p>
+    A text memory benchmark asks whether a model can find the right sentence
+    again. This one asks something a transcript cannot answer. Three of the four
+    evidence types are carried by the audio signal rather than by the words, so a
+    system that transcribes first and remembers later cannot reach them.
+  </p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Evidence type</th><th>The answer depends on</th><th class="num">Items</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot d-sem"></span><code>speech_semantics</code></td><td>what the user said</td><td class="num">928</td></tr>
+      <tr><td><span class="dot d-spk"></span><code>speaker_information</code></td><td>who was speaking</td><td class="num">588</td></tr>
+      <tr><td><span class="dot d-par"></span><code>paralinguistic_information</code></td><td>how it was said — vocal delivery</td><td class="num">1,056</td></tr>
+      <tr><td><span class="dot d-env"></span><code>environmental_sound</code></td><td>what could be heard around the user</td><td class="num">624</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>The task</h2>
+  <figure>
+    <svg viewBox="0 0 800 260" role="img" aria-label="Sessions separated by weeks, then a spoken question at the end">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#98a0ae"/>
+        </marker>
+      </defs>
+      <line x1="40" y1="176" x2="762" y2="176" stroke="#d7dbe3" stroke-width="2" marker-end="url(#ar)"/>
+
+      <g font-size="12" font-family="ui-monospace,Menlo,monospace">
+        <!-- filler -->
+        <rect x="42" y="118" width="96" height="46" rx="7" fill="#f2f4f7" stroke="#dfe3ea"/>
+        <text x="90" y="140" text-anchor="middle" fill="#7a818e">filler</text>
+        <text x="90" y="155" text-anchor="middle" fill="#9aa1ad" font-size="10">🔊 ▸ text</text>
+        <text x="90" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Jun 17</text>
+
+        <!-- topical haystack -->
+        <rect x="158" y="118" width="110" height="46" rx="7" fill="#eef2fa" stroke="#d3ddf0"/>
+        <text x="213" y="140" text-anchor="middle" fill="#55607a">topical</text>
+        <text x="213" y="155" text-anchor="middle" fill="#8a94a8" font-size="10">same subject</text>
+        <text x="213" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Jun 23</text>
+
+        <!-- same-key haystack -->
+        <rect x="288" y="112" width="132" height="58" rx="7" fill="#fdf1e7" stroke="#f0d7c2"/>
+        <text x="354" y="134" text-anchor="middle" fill="#a4501f">same-key</text>
+        <text x="354" y="150" text-anchor="middle" fill="#b7784a" font-size="10">shares the cue,</text>
+        <text x="354" y="162" text-anchor="middle" fill="#b7784a" font-size="10">ruled out by the question</text>
+        <text x="354" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Jul 04</text>
+
+        <!-- evidence -->
+        <rect x="440" y="106" width="126" height="70" rx="7" fill="#e9f3ec" stroke="#bcdcc7" stroke-width="1.5"/>
+        <text x="503" y="130" text-anchor="middle" fill="#2f6f4f" font-weight="600">evidence</text>
+        <text x="503" y="147" text-anchor="middle" fill="#4d8467" font-size="10">the answer is</text>
+        <text x="503" y="159" text-anchor="middle" fill="#4d8467" font-size="10">in this audio</text>
+        <text x="503" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Aug 14</text>
+
+        <!-- filler 2 -->
+        <rect x="586" y="118" width="96" height="46" rx="7" fill="#f2f4f7" stroke="#dfe3ea"/>
+        <text x="634" y="140" text-anchor="middle" fill="#7a818e">filler</text>
+        <text x="634" y="155" text-anchor="middle" fill="#9aa1ad" font-size="10">🔊 ▸ text</text>
+        <text x="634" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Aug 29</text>
+
+        <!-- question -->
+        <circle cx="730" cy="141" r="24" fill="#2f5fd0"/>
+        <text x="730" y="146" text-anchor="middle" fill="#fff" font-size="16">?</text>
+        <text x="730" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Sep 01</text>
+      </g>
+
+      <text x="40" y="42" font-size="13" fill="#5c6370" font-family="inherit">
+        Each session: user turns as audio, assistant turns as text. Weeks apart.
+      </text>
+      <text x="40" y="66" font-size="13" fill="#5c6370" font-family="inherit">
+        The final turn is a spoken question. The model is never given a transcript.
+      </text>
+      <text x="40" y="238" font-size="12" fill="#98a0ae" font-family="inherit">
+        A 64K history runs to a few hundred clips and tens of minutes of audio.
+      </text>
+    </svg>
+    <figcaption>
+      The same-key distractor is what stops length from being free: it shares the
+      question's retrieval key and is excluded only by the selector the question
+      actually states.
+    </figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>What is measured</h2>
+  <p>
+    Four memory operations cross the four evidence types, giving
+    <b>15 occupied cells</b>. <code>speech_semantics × information_extraction</code>
+    is deliberately empty: reading one fact out of one transcript is not what this
+    benchmark is for.
+  </p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Memory operation</th><th>The item asks the model to</th><th class="num">Items</th></tr></thead>
+    <tbody>
+      <tr><td><code>information_extraction</code></td><td>recover one fact from one session</td><td class="num">920</td></tr>
+      <tr><td><code>multi_session_reasoning</code></td><td>combine evidence across sessions</td><td class="num">884</td></tr>
+      <tr><td><code>temporal_evolution_tracking</code></td><td>track how something changed over time</td><td class="num">872</td></tr>
+      <tr><td><code>answer_refusal</code></td><td>recognise that the history does not contain the answer</td><td class="num">520</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Four context lengths, one question</h3>
+  <p>
+    Every question appears at 8K, 16K, 32K and 64K audio tokens under one
+    <code>question_id</code>. Question, gold answer and evidence are identical
+    across the four; only the surrounding history grows, and it nests —
+    <code>sessions(8K) ⊆ sessions(16K) ⊆ sessions(32K) ⊆ sessions(64K)</code> —
+    so a length comparison holds the item fixed and varies only the distraction.
+    The same-key distractors scale 1 / 2 / 4 / 8 with it.
+  </p>
+</section>
+
+<section>
+  <h2>Download what you need</h2>
+  <p>
+    Every row carries its own history and every clip in it, so no config depends
+    on another. Files are laid out by context length and then by evidence type,
+    with a config at each level.
+  </p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Config</th><th class="num">Items</th><th class="num">8K</th><th class="num">16K</th><th class="num">32K</th><th class="num">64K</th></tr></thead>
+    <tbody>
+      <tr><td><code>&lt;length&gt;</code> — all</td><td class="num">799</td><td class="num">4.03 GB</td><td class="num">7.72 GB</td><td class="num">15.38 GB</td><td class="num">32.84 GB</td></tr>
+      <tr><td><span class="dot d-sem"></span><code>…_speech_semantics</code></td><td class="num">232</td><td class="num">1.19</td><td class="num">2.26</td><td class="num">4.50</td><td class="num">9.18</td></tr>
+      <tr><td><span class="dot d-spk"></span><code>…_speaker_information</code></td><td class="num">147</td><td class="num">0.73</td><td class="num">1.41</td><td class="num">2.80</td><td class="num">6.52</td></tr>
+      <tr><td><span class="dot d-par"></span><code>…_paralinguistic_information</code></td><td class="num">264</td><td class="num">1.33</td><td class="num">2.55</td><td class="num">5.12</td><td class="num">10.38</td></tr>
+      <tr><td><span class="dot d-env"></span><code>…_environmental_sound</code></td><td class="num">156</td><td class="num">0.79</td><td class="num">1.50</td><td class="num">2.96</td><td class="num">6.75</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="color:var(--muted);font-size:.93rem">
+    Testing whether your system hears vocal delivery at 32K costs 5.12 GB, not
+    the whole 60.
+  </p>
+
+<pre><span class="c"># the whole 32K condition</span>
+ds = load_dataset(<span class="s">"AudioMemory/voxmembench"</span>, <span class="s">"32k"</span>, split=<span class="s">"train"</span>)
+
+<span class="c"># or just the vocal-delivery items at 32K</span>
+ds = load_dataset(<span class="s">"AudioMemory/voxmembench"</span>, <span class="s">"32k_paralinguistic_information"</span>)</pre>
+
+  <div class="note">
+    <b>Every user turn ships its transcript alongside its audio</b>, so the
+    benchmark can be read as well as heard and a text-only run gives the ceiling
+    the audio numbers are measured against. The transcript is the words only —
+    the cue markers that drove the delivery are not in it, which is what keeps
+    the paralinguistic, speaker and environmental items out of a reader's reach.
+    Do not put the transcripts in the prompt for a listening run.
+  </div>
+</section>
+
+<section>
+  <h2>Scoring</h2>
+  <p>
+    Accuracy, reported for two strata that are never averaged together.
+    Answers are open ended, so an LLM judge settles equivalence — and it sees
+    only the question, the gold and the response, never the audio and never the
+    history, so it cannot answer the item itself.
+  </p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Stratum</th><th class="num">Items</th><th>Correct when</th></tr></thead>
+    <tbody>
+      <tr><td><code>answerable</code></td><td class="num">2,676</td><td>the response means the same as the gold answer</td></tr>
+      <tr><td><code>answer_refusal</code></td><td class="num">520</td><td>the response says the evidence is insufficient</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    Report per context length and per cell as well. The aggregate hides that the
+    audio-only cells behave nothing like the semantic ones — which is the point
+    of the benchmark.
+  </p>
+<pre><span class="c"># runner and scorer</span>
+git clone https://github.com/swagshaw/voxmem && cd voxmem
+pip install -r requirements.txt
+
+python run_voxmembench.py --config 32k --model gemini:gemini-2.5-flash \
+    --allow-abstention --out predictions_32k.jsonl
+python score_voxmembench.py --predictions predictions_32k.jsonl \
+    --judge openai:gpt-4o-mini</pre>
+  <p style="color:var(--muted);font-size:.93rem">
+    Local models plug in through a one-function adapter; a Slurm job-array
+    submitter and a resumable matrix runner ship with the code.
+  </p>
+</section>
+
+<section>
+  <h2>How the data was made</h2>
+  <p>
+    User speech is synthetic, voice-cloned from 30 reference speakers of the
+    <a href="https://doi.org/10.7488/ds/2645">CSTR VCTK Corpus</a>; the persona
+    profiles are fictional and are not recoverable from the voice. Assistant
+    turns are text and were never spoken. Environmental sound comes from
+    <a href="https://doi.org/10.7910/DVN/YDEPUT">ESC-50</a>, mixed into the user
+    speech at a target SNR rather than appended, so it is present <em>while</em>
+    the user talks. Paralinguistic cues are rendered as vocal delivery in the
+    cloned speech. All audio is 24 kHz mono.
+  </p>
+  <p>
+    Gold answers, evidence-session annotations and evidence positions are all
+    public. There is no hidden split and no submission server: the benchmark is
+    meant to be run locally and analysed.
+  </p>
+</section>
+
+<section>
+  <h2>Citation</h2>
+<pre>@misc{voxmembench2026,
+  title  = {VoxMemBench: Long-Term Spoken Conversational Memory},
+  author = {The VoxMemBench authors},
+  year   = {2026},
+  url    = {https://huggingface.co/datasets/AudioMemory/voxmembench}
+}</pre>
+  <p style="font-size:.93rem;color:var(--muted)">
+    The dataset is CC BY-NC 4.0 — the non-commercial term follows from ESC-50.
+    Attribution is required for VCTK and for ESC-50. The evaluation code is MIT.
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>VoxMemBench</span>
+    <span>
+      <a href="https://huggingface.co/datasets/AudioMemory/voxmembench">Dataset</a> ·
+      <a href="https://github.com/swagshaw/voxmem">Code</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

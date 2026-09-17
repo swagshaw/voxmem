@@ -13,6 +13,12 @@
     <img alt="Python" src="https://img.shields.io/badge/python-3.9%2B-blue">
 </p>
 
+<p align="center">
+    <a href="https://swagshaw.github.io/voxmem/"><b>Project page</b></a> &nbsp;·&nbsp;
+    <a href="https://huggingface.co/datasets/AudioMemory/voxmembench">Dataset</a> &nbsp;·&nbsp;
+    <a href="docs/index.html">docs/</a>
+</p>
+
 VoxMemBench asks whether a spoken-dialogue system remembers what it **heard**.
 A model is given many time-separated sessions of a conversation — every user
 turn as audio, every assistant turn as text — and then a spoken question whose
