@@ -14,7 +14,6 @@
 </p>
 
 <p align="center">
-    <a href="https://swagshaw.github.io/voxmem/"><b>Project page</b></a> &nbsp;·&nbsp;
     <a href="https://huggingface.co/datasets/AudioMemory/voxmembench">Dataset</a> &nbsp;·&nbsp;
     <a href="docs/index.html">docs/</a>
 </p>
