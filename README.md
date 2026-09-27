@@ -1,4 +1,4 @@
-# VoxMemBench: Long-Term Spoken Conversational Memory
+# VoxMem: Long-Term Spoken Conversational Memory
 
 <p align="center">
     <a href="https://huggingface.co/datasets/AudioMemory/voxmembench" target="_blank">
@@ -18,7 +18,7 @@
     <a href="docs/index.html">docs/</a>
 </p>
 
-VoxMemBench asks whether a spoken-dialogue system remembers what it **heard**.
+VoxMem asks whether a spoken-dialogue system remembers what it **heard**.
 A model is given many time-separated sessions of a conversation — every user
 turn as audio, every assistant turn as text — and then a spoken question whose
 answer is somewhere in that history.
