@@ -1,40 +1,96 @@
-# VoxMem: Long-Term Spoken Conversational Memory
+<p align="center">
+  <img src="docs/static/images/logo.svg" width="72" alt="VoxMem logo">
+</p>
+
+<h1 align="center">VoxMem: Benchmarking Multimodal Memory<br>in Large Audio Language Models</h1>
 
 <p align="center">
-    <a href="https://huggingface.co/datasets/AudioMemory/voxmembench" target="_blank">
-        <img alt="Dataset" src="https://img.shields.io/badge/%F0%9F%A4%97-Dataset-blue">
-    </a>
-    <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">
-        <img alt="Data licence" src="https://img.shields.io/badge/data-CC%20BY--NC%204.0-lightgrey">
-    </a>
-    <a href="LICENSE" target="_blank">
-        <img alt="Code licence" src="https://img.shields.io/badge/code-MIT-green">
-    </a>
-    <img alt="Python" src="https://img.shields.io/badge/python-3.9%2B-blue">
+  Yang Xiao<sup>1</sup>&nbsp;&nbsp; Vidhyasaharan Sethu<sup>2</sup>&nbsp;&nbsp; Eun-Jung Holden<sup>1</sup>&nbsp;&nbsp; Ting Dang<sup>1</sup>
+  <br>
+  <sup>1</sup>University of Melbourne&nbsp;&nbsp;&nbsp; <sup>2</sup>University of New South Wales
+  <br>
+  AIMS Lab
 </p>
 
 <p align="center">
-    <a href="https://huggingface.co/datasets/AudioMemory/voxmembench">Dataset</a> &nbsp;·&nbsp;
-    <a href="docs/index.html">docs/</a>
+  <a href="https://swagshaw.github.io/voxmem/"><img alt="Project page" src="https://img.shields.io/badge/Project-Page-2D4A8A"></a>
+  <!-- arXiv: replace with <a href="https://arxiv.org/abs/XXXX.XXXXX"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b"></a> -->
+  <img alt="arXiv coming soon" src="https://img.shields.io/badge/arXiv-coming%20soon-lightgrey">
+  <a href="https://huggingface.co/datasets/AudioMemory/voxmembench"><img alt="Dataset" src="https://img.shields.io/badge/%F0%9F%A4%97-Dataset-blue"></a>
+  <a href="LICENSE"><img alt="Code licence" src="https://img.shields.io/badge/code-MIT-green"></a>
+  <a href="https://creativecommons.org/licenses/by-nc/4.0/"><img alt="Data licence" src="https://img.shields.io/badge/data-CC%20BY--NC%204.0-lightgrey"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.9%2B-blue">
 </p>
 
-VoxMem asks whether a spoken-dialogue system remembers what it **heard**.
-A model is given many time-separated sessions of a conversation — every user
-turn as audio, every assistant turn as text — and then a spoken question whose
-answer is somewhere in that history.
+> **TL;DR.** Do audio language models remember not only *what* was said, but *who* said it, *how* it was said, and *what* was audible?
+> VoxMem crosses four acoustic evidence types with four memory operations over multi-session spoken histories from 8K to 64K tokens.
+> Across 15 LALMs, no model exceeds 40% overall accuracy at 32K, and memory for non-lexical information lags far behind memory for words.
 
-Three of the four evidence types are carried by the audio signal rather than by
-the words, so a system that transcribes first and remembers later cannot reach
-them.
+## News
 
-**799 questions × 4 context lengths = 3,196 items**, over four evidence types
-and four memory operations.
+- **2026-09** — Code and data released. The paper will be on arXiv shortly.
 
-This repository contains the **evaluation code**. The data lives on the Hub:
-[AudioMemory/voxmembench](https://huggingface.co/datasets/AudioMemory/voxmembench).
+## Overview
+
+<p align="center">
+  <img src="docs/static/images/examples.jpg" width="100%" alt="Four representative VoxMem items: IE x Speaker, MSR x Environmental, TET x Paralinguistic, and AR x Semantic, each with a session timeline and a gold answer.">
+</p>
+
+Spoken conversational systems must recover information from prior interactions, yet relevant
+information in speech extends beyond what was said to **who** said it, **how** it was spoken, and
+**what was audible**: information that exists only in the audio signal and cannot be recovered
+from a transcript. VoxMem evaluates this along two axes:
+
+- **Acoustic evidence**, what must be recovered: speech semantics, speaker identity, paralinguistic cues, environmental sound.
+- **Memory operation**, how it must be used: information extraction (IE), multi-session reasoning (MSR), temporal evolution tracking (TET), answer refusal (AR).
+
+| | |
+|---|---|
+| Evaluation instances | **3,196** (799 questions × 4 context lengths) |
+| Spoken sessions | **34,743** (177 hours of audio) |
+| Context budgets | **8K, 16K, 32K, 64K** tokens, with each question and its evidence held fixed |
+| Taxonomy | **15** valid evidence × operation cells |
+| Models evaluated | **15** LALMs (5 proprietary, 10 open-weight) |
+
+## Leaderboard
+
+Accuracy (%) at the **32K** reference budget over all 799 questions, by answer-critical evidence type
+(Answer Refusal items included, with appropriate abstention counted as correct). The best score in each
+column is in bold. Results at 8K, 16K and 64K are on the [project page](https://swagshaw.github.io/voxmem/#leaderboard).
+
+| # | Model | Type | Semantics | Speaker | Paralinguistic | Environmental | **Overall** |
+|---:|---|---|---:|---:|---:|---:|---:|
+| 1 | Qwen3.8-Omni-Flash | Proprietary | 60.3 | **42.2** | **25.4** | **25.0** | **38.5** |
+| 2 | Gemini-3.1-Pro | Proprietary | **68.5** | 29.3 | 19.7 | 21.2 | 35.9 |
+| 3 | Gemini-3.8-Flash | Proprietary | 54.3 | 41.5 | 20.8 | 19.2 | 34.0 |
+| 4 | Qwen3.5-Omni-Plus | Proprietary | 56.0 | 31.3 | 19.3 | 23.7 | 33.0 |
+| 5 | Qwen3-Omni-30B-A3B | Open-weight | 38.4 | 25.2 | 20.1 | 18.6 | 26.0 |
+| 6 | Ultravox-v0.6-Llama-3.1-8B | Open-weight | 35.3 | 31.3 | 15.5 | 17.3 | 24.5 |
+| 7 | Gemini-2.5-Pro | Proprietary | 38.8 | 19.0 | 14.8 | 20.5 | 23.7 |
+| 8 | Gemma-4-E4B-it | Open-weight | 35.8 | 29.3 | 14.0 | 16.7 | 23.7 |
+| 9 | Baichuan-Audio-7B | Open-weight | 30.6 | 35.4 | 13.3 | 13.5 | 22.4 |
+| 10 | MiniCPM-o-4.5 | Open-weight | 31.0 | 28.6 | 11.4 | 18.6 | 21.7 |
+| 11 | Audio-Flamingo-Next | Open-weight | 31.9 | 23.8 | 15.2 | 13.5 | 21.3 |
+| 12 | FireRedAudio-9B | Open-weight | 28.9 | 25.9 | 15.2 | 14.7 | 21.0 |
+| 13 | Phi-4-Multimodal | Open-weight | 27.6 | 27.9 | 14.0 | 13.5 | 20.4 |
+| 14 | MiMo-Audio-7B-Instruct | Open-weight | 27.2 | 23.1 | 13.3 | 18.6 | 20.2 |
+| 15 | Baichuan-Omni-1.5-7B | Open-weight | 28.9 | 17.0 | 12.9 | 10.3 | 17.8 |
+| | *Mean proprietary (5)* | | *55.6* | *32.7* | *20.0* | *21.9* | *33.0* |
+| | *Mean open-weight (10)* | | *31.6* | *26.7* | *14.5* | *15.5* | *21.9* |
+
+## Key findings
+
+1. **Current LALMs remain far from reliable spoken conversational memory.** No model exceeds 40% overall at 32K; the strongest reaches 38.5%.
+2. **Non-lexical acoustic information is much less accessible than speech semantics.** Proprietary models average 55.6% on speech semantics but 32.7%, 20.0% and 21.9% on speaker, paralinguistic and environmental evidence.
+3. **Difficulty depends on the operation *and* the evidence.** Temporal tracking works for semantics (44.5%) but nearly collapses for paralinguistic (3.4%) and environmental (1.2%) evidence.
+4. **Answer refusal follows a different profile from answering**: models abstain more successfully exactly where they struggle to use the acoustic evidence.
+5. **Access to the same evidence declines as history grows**, at different rates across evidence types, even though each question and its evidence are held fixed.
+6. **Error profiles differ qualitatively.** Speaker errors are mostly binding failures (48%); paralinguistic errors are mostly localization failures (63%).
 
 ## Quick Links
 
+- [Leaderboard](#leaderboard)
+- [Key findings](#key-findings)
 - [Setup](#setup)
 - [Data](#data)
 - [Running Evaluation](#running-evaluation)
@@ -343,13 +399,17 @@ so that grading never touches the audio again:
 
 ## Citation
 
+If you find VoxMem useful, please cite:
+
 ```bibtex
-@misc{voxmembench2026,
-  title  = {VoxMemBench: Long-Term Spoken Conversational Memory},
-  author = {The VoxMemBench authors},
-  year   = {2026},
-  url    = {https://huggingface.co/datasets/AudioMemory/voxmembench}
+@article{xiao2026voxmem,
+  title   = {VoxMem: Benchmarking Multimodal Memory in Large Audio Language Models},
+  author  = {Xiao, Yang and Sethu, Vidhyasaharan and Holden, Eun-Jung and Dang, Ting},
+  journal = {arXiv preprint arXiv:XXXX.XXXXX},
+  year    = {2026}
 }
 ```
+
+## License
 
 Code is MIT (see [LICENSE](LICENSE)); the dataset is CC BY-NC 4.0.

@@ -3,362 +3,665 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VoxMemBench</title>
-<meta name="description" content="A benchmark for long-term spoken conversational memory: 799 questions at four context lengths, where three of the four evidence types live in the audio signal rather than in the words.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+<title>VoxMem: Benchmarking Multimodal Memory in Large Audio Language Models</title>
+<meta name="description" content="VoxMem is a multi-session benchmark for spoken conversational memory: 3,196 instances crossing four acoustic evidence types with four memory operations, from 8K to 64K tokens.">
+<meta property="og:title" content="VoxMem: Benchmarking Multimodal Memory in Large Audio Language Models">
+<meta property="og:description" content="Do audio language models remember who spoke, how they spoke, and what was audible? A multi-session benchmark from 8K to 64K tokens.">
+<meta property="og:image" content="https://swagshaw.github.io/voxmem/static/images/examples.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='12' width='4' height='8' rx='2' fill='%23F29B4B'/%3E%3Crect x='10' y='6' width='4' height='20' rx='2' fill='%234A8FE7'/%3E%3Crect x='17' y='9' width='4' height='14' rx='2' fill='%233DBE7A'/%3E%3Crect x='24' y='13' width='4' height='6' rx='2' fill='%239C7BE0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#16181d; --muted:#5c6370; --line:#e3e6ec; --bg:#ffffff; --soft:#f6f7f9;
-  --accent:#2f5fd0; --accent-soft:#eaf0fd;
-  --semantic:#6b7280; --speaker:#2f6f4f; --para:#a4501f; --env:#3b5f9e;
-  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --ink:#1B2640; --ink-2:#3A4357; --muted:#5E6679; --rule:#DDE2EC; --bg:#FFFFFF; --bg-soft:#F4F6FB;
+  --accent:#2D4A8A; --link:#2459B3;
+  --sem:#F29B4B; --spk:#4A8FE7; --par:#3DBE7A; --env:#9C7BE0;
+  --radius:14px; --shadow:0 1px 2px rgba(27,38,64,.06),0 8px 24px rgba(27,38,64,.06);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0;background:var(--bg);color:var(--ink);
-  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-}
-.wrap{max-width:860px;margin:0 auto;padding:0 20px}
-a{color:var(--accent);text-decoration:none}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+a{color:var(--link);text-decoration:none}
 a:hover{text-decoration:underline}
-code,kbd{font-family:var(--mono);font-size:.9em}
+img{max-width:100%;height:auto}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.narrow{max-width:820px}
+
+/* top colour bar + nav */
+.topbar{height:5px;display:grid;grid-template-columns:repeat(4,1fr)}
+.topbar span:nth-child(1){background:var(--sem)} .topbar span:nth-child(2){background:var(--spk)}
+.topbar span:nth-child(3){background:var(--par)} .topbar span:nth-child(4){background:var(--env)}
+nav.site{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--rule)}
+nav.site .wrap{display:flex;align-items:center;gap:22px;height:54px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;color:var(--ink);letter-spacing:-.01em}
+.brand:hover{text-decoration:none}
+.brand svg{width:22px;height:22px}
+nav.site ul{display:flex;gap:18px;list-style:none;margin:0 0 0 auto;padding:0;overflow-x:auto;scrollbar-width:none}
+nav.site ul::-webkit-scrollbar{display:none}
+nav.site li a{color:var(--muted);font-size:14px;font-weight:500;white-space:nowrap}
+nav.site li a:hover{color:var(--ink);text-decoration:none}
 
 /* hero */
-header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fbfcfe,#fff)}
-header .wrap{padding-block:56px 44px}
-h1{font-size:2.5rem;line-height:1.15;margin:0 0 .35em;letter-spacing:-.02em}
-h1 .sub{display:block;font-size:1.05rem;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:.5em}
-.badges{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 0}
-.badge{
-  display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;
-  border:1px solid var(--line);background:#fff;font-size:.86rem;color:var(--ink);
+header.hero{padding:64px 0 36px;text-align:center}
+.kicker{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);background:var(--bg-soft);border:1px solid var(--rule);padding:5px 12px;border-radius:999px}
+h1.title{font-size:clamp(30px,5.2vw,52px);line-height:1.1;letter-spacing:-.025em;font-weight:800;margin:22px auto 0;max-width:900px}
+h1.title .vox{background:linear-gradient(90deg,var(--sem),var(--spk) 38%,var(--par) 68%,var(--env));-webkit-background-clip:text;background-clip:text;color:transparent}
+.subtitle{font-family:var(--serif);font-style:italic;font-size:clamp(17px,2.2vw,21px);color:var(--ink-2);margin:16px auto 0;max-width:720px}
+.authors{margin:28px 0 0;font-size:18px;font-weight:500;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 22px}
+.authors sup{color:var(--accent);font-weight:600;margin-left:1px}
+.affils{margin:8px 0 0;color:var(--muted);font-size:15px;display:flex;flex-wrap:wrap;justify-content:center;gap:2px 20px}
+.affils sup{color:var(--accent);font-weight:600;margin-right:2px}
+.lab{margin-top:4px;color:var(--muted);font-size:14px}
+.buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:28px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-weight:600;font-size:15px;border:1px solid var(--ink);transition:transform .15s ease,background .15s ease}
+.btn:hover{text-decoration:none;transform:translateY(-1px);background:#2A3656}
+.btn svg{width:17px;height:17px;fill:currentColor}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
+.btn.ghost:hover{background:var(--bg-soft)}
+.btn.soon{background:#fff;color:var(--muted);border:1px dashed #B9C0CF;cursor:default}
+.btn.soon:hover{transform:none}
+
+/* stats band */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:40px auto 0;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.stat{padding:16px 10px;text-align:center;border-right:1px solid var(--rule)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.stat span{display:block;font-size:12.5px;color:var(--muted);line-height:1.35;margin-top:2px}
+
+/* sections */
+section{padding:56px 0;border-top:1px solid var(--rule)}
+section.soft{background:var(--bg-soft)}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:10px}
+.sec-num{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:500}
+h2{font-size:clamp(24px,3.2vw,32px);letter-spacing:-.02em;line-height:1.2;margin:0}
+.lede{color:var(--ink-2);font-size:17px;max-width:780px;margin:6px 0 26px}
+.serif{font-family:var(--serif);font-size:18.5px;line-height:1.7;color:var(--ink-2)}
+.serif em{color:var(--ink)}
+
+figure{margin:0}
+figure a{display:block}
+figure img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--rule);background:#fff}
+figcaption{font-size:14px;color:var(--muted);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+
+.tldr{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:10px;padding:16px 18px;margin-bottom:24px;box-shadow:var(--shadow)}
+.tldr .tag{flex:none;font-size:12px;font-weight:800;letter-spacing:.1em;color:#fff;background:var(--accent);border-radius:6px;padding:3px 8px;margin-top:2px}
+.tldr p{margin:0;font-size:17px}
+
+/* evidence chips */
+.chip{display:inline-flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+.chip::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--c)}
+.c-sem{--c:var(--sem)} .c-spk{--c:var(--spk)} .c-par{--c:var(--par)} .c-env{--c:var(--env)}
+
+/* taxonomy */
+.tax-controls,.lb-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--rule);border-radius:999px;padding:3px}
+.seg button{font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:transparent;border:0;border-radius:999px;padding:6px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.seg button:focus-visible,.cell:focus-visible,th button:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.tax{display:grid;grid-template-columns:minmax(118px,1.1fr) repeat(4,minmax(0,1fr));gap:8px}
+.tax .corner{font-size:12px;color:var(--muted);align-self:end;padding:0 4px 6px;line-height:1.3}
+.tax .colh{border-radius:10px;padding:10px 8px;text-align:center;font-weight:700;font-size:14.5px;background:color-mix(in srgb,var(--c) 16%,#fff);border:1px solid color-mix(in srgb,var(--c) 40%,#fff)}
+.tax .colh small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.tax .rowh{border-radius:10px;padding:10px 12px;background:#fff;border:1px solid var(--rule);display:flex;flex-direction:column;justify-content:center}
+.tax .rowh b{font-size:17px;letter-spacing:.01em}
+.tax .rowh span{font-size:12.5px;color:var(--muted);line-height:1.3}
+.cell{font:inherit;cursor:pointer;border-radius:10px;border:1px solid color-mix(in srgb,var(--c) 45%,#fff);padding:12px 6px;min-height:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);transition:transform .12s ease,box-shadow .12s ease}
+.cell:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.cell[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.cell .v{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.cell .n{font-size:12px;color:var(--ink-2)}
+.cell.excluded{cursor:default;background:repeating-linear-gradient(135deg,#F1F2F5 0 8px,#E8EAEF 8px 16px);border-color:#E1E4EA;color:var(--muted)}
+.cell.excluded:hover{transform:none;box-shadow:none}
+.cell.excluded .v{font-size:14px;font-weight:600}
+.tax-detail{margin-top:16px;background:#fff;border:1px solid var(--rule);border-radius:10px;padding:14px 16px;font-size:15px;min-height:72px}
+.tax-detail b{color:var(--ink)}
+.legend{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.legend .ramp{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,#fff,#8C9AB8);border:1px solid var(--rule)}
+
+.defs{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:28px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 10px;font-size:16px}
+.card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14.5px}
+.card dt{font-weight:600}
+.card dd{margin:0;color:var(--ink-2)}
+
+/* leaderboard */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+table.lb{width:100%;min-width:760px;border-collapse:collapse;font-size:14.5px}
+table.lb th,table.lb td{padding:10px 12px;text-align:right;border-bottom:1px solid #EDF0F5;white-space:nowrap}
+table.lb th:nth-child(-n+3),table.lb td:nth-child(-n+3){text-align:left}
+table.lb thead th{background:#FAFBFD;font-size:13px;color:var(--muted);font-weight:600;position:sticky;top:0}
+table.lb th button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+table.lb th button::after{content:"↕";opacity:.35;font-size:11px}
+table.lb th button[data-dir="desc"]::after{content:"↓";opacity:1}
+table.lb th button[data-dir="asc"]::after{content:"↑";opacity:1}
+table.lb th .chip{font-weight:600}
+table.lb td.rank{color:var(--muted);font-variant-numeric:tabular-nums;width:40px}
+table.lb td.model{font-weight:600}
+table.lb td.num{font-variant-numeric:tabular-nums;background-image:linear-gradient(90deg,color-mix(in srgb,var(--c) 20%,transparent) var(--w),transparent var(--w));background-repeat:no-repeat}
+table.lb td.best{font-weight:800}
+table.lb td.best::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--c);margin-left:6px;vertical-align:middle}
+table.lb td.overall{font-weight:700;color:var(--ink)}
+table.lb tr.mean td{background:#FAFBFD;color:var(--ink-2);font-style:italic}
+table.lb tr.mean td.model{font-weight:600}
+table.lb tbody tr:hover td{background-color:#F7F9FD}
+.badge{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--rule);color:var(--ink-2);background:#fff}
+.badge.prop{border-color:#C9D3EA;background:#EEF2FA;color:var(--accent)}
+.note{font-size:13.5px;color:var(--muted);margin-top:12px}
+
+/* findings */
+.findings{display:grid;gap:18px}
+.finding{display:grid;grid-template-columns:52px 1fr;gap:4px 16px;background:#fff;border:1px solid var(--rule);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)}
+.finding .no{font-family:var(--mono);font-size:28px;font-weight:500;color:var(--accent);line-height:1}
+.finding h3{margin:0 0 6px;font-size:18px;line-height:1.35;letter-spacing:-.01em}
+.finding p{margin:0;color:var(--ink-2)}
+.finding figure{grid-column:1/-1;margin-top:14px}
+.finding .pair{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+.finding .pair figure{grid-column:auto;margin-top:0}
+.err-legend{grid-column:1/-1;list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--ink-2)}
+.err-legend li{display:inline-flex;align-items:center;gap:7px}
+.err-legend li::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--c)}
+
+/* construction */
+.two{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;align-items:start;margin-top:24px}
+table.plain{width:100%;border-collapse:collapse;font-size:14.5px}
+table.plain th,table.plain td{padding:8px 10px;text-align:right;border-bottom:1px solid #EDF0F5;white-space:nowrap}
+table.plain th:first-child,table.plain td:first-child{text-align:left}
+table.plain thead th{color:var(--muted);font-weight:600;font-size:13px}
+table.plain tr.all td{font-weight:700;border-top:1px solid var(--rule)}
+table.plain td.delta{font-weight:700;color:var(--accent)}
+
+/* code */
+pre{margin:0;background:#141B2D;color:#E6EAF2;border-radius:12px;padding:18px 20px;overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:1.65}
+pre .c{color:#8B96AE}
+.bib{position:relative}
+.copy{position:absolute;top:10px;right:10px;font:inherit;font-size:12.5px;font-weight:600;color:#E6EAF2;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 10px;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.18)}
+
+footer{border-top:1px solid var(--rule);padding:30px 0 44px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+
+@media (max-width:860px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .stat:nth-child(3){border-right:0}
+  .stat:nth-child(-n+3){border-bottom:1px solid var(--rule)}
+  .defs,.two{grid-template-columns:1fr}
 }
-.badge:hover{border-color:var(--accent);text-decoration:none}
-.badge.solid{background:var(--accent);border-color:var(--accent);color:#fff}
-
-/* key numbers */
-.figures{display:flex;flex-wrap:wrap;gap:0;margin:34px 0 0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.fig{flex:1 1 150px;padding:16px 18px;border-right:1px solid var(--line);background:#fff}
-.fig:last-child{border-right:0}
-.fig b{display:block;font-size:1.5rem;letter-spacing:-.01em}
-.fig span{color:var(--muted);font-size:.82rem}
-
-section{padding-block:44px;border-bottom:1px solid var(--line)}
-section:last-of-type{border-bottom:0}
-h2{font-size:1.45rem;margin:0 0 .6em;letter-spacing:-.01em}
-h3{font-size:1.05rem;margin:1.9em 0 .5em}
-p{margin:0 0 1em}
-.lede{font-size:1.08rem}
-
-table{width:100%;border-collapse:collapse;margin:1.1em 0;font-size:.93rem}
-th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-weight:600;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
-tbody tr:hover{background:var(--soft)}
-.scroll{overflow-x:auto}
-
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:baseline}
-.d-sem{background:var(--semantic)} .d-spk{background:var(--speaker)}
-.d-par{background:var(--para)} .d-env{background:var(--env)}
-
-pre{
-  background:#14161b;color:#e6e9ef;padding:15px 17px;border-radius:9px;overflow-x:auto;
-  font-family:var(--mono);font-size:.85rem;line-height:1.6;margin:1.1em 0
+@media (max-width:600px){
+  header.hero{padding:40px 0 28px}
+  .kicker{font-size:10.5px;letter-spacing:.08em}
+  .seg button{white-space:nowrap;font-size:13px;padding:6px 11px}
+  .tax .corner{font-size:0}
+  nav.site ul{gap:14px}
+  .brand span{display:none}
+  .tax{grid-template-columns:62px repeat(4,minmax(0,1fr));gap:5px}
+  .tax .rowh{padding:8px 6px}
+  .tax .rowh span,.tax .colh small{display:none}
+  .tax .colh{font-size:12px;padding:8px 2px}
+  .tax .colh .long{display:none}
+  .cell{min-height:62px;padding:8px 2px}
+  .cell .v{font-size:17px}
+  .cell.excluded .v{font-size:11px}
+  .finding{grid-template-columns:1fr;padding:18px}
+  .finding .pair{grid-template-columns:1fr}
+  .card dl{grid-template-columns:1fr}
+  .card dt{margin-top:6px}
 }
-pre .c{color:#8b93a3}
-pre .s{color:#9ecbff}
-
-.note{
-  border-left:3px solid var(--accent);background:var(--accent-soft);
-  padding:13px 17px;border-radius:0 8px 8px 0;margin:1.3em 0;font-size:.94rem
-}
-.note b{font-weight:600}
-
-figure{margin:1.6em 0}
-figcaption{color:var(--muted);font-size:.86rem;margin-top:.7em}
-svg{max-width:100%;height:auto;display:block}
-
-footer{padding-block:34px;color:var(--muted);font-size:.88rem}
-footer .wrap{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between}
-
-@media (max-width:640px){
-  header .wrap{padding-block:40px 32px}
-  h1{font-size:1.95rem}
-  .fig{flex-basis:50%;border-right:0;border-bottom:1px solid var(--line)}
-}
+@media (min-width:601px){ .tax .colh .short{display:none} }
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{transition:none!important} }
 </style>
 </head>
 <body>
 
-<header>
+<div class="topbar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+<nav class="site" aria-label="Sections">
   <div class="wrap">
-    <h1>VoxMemBench
-      <span class="sub">Does a spoken-dialogue system remember what it <em>heard</em>?</span>
-    </h1>
-    <p class="lede" style="max-width:62ch;margin-bottom:0">
-      A model is given many time-separated sessions of a conversation — every user
-      turn as audio, every assistant turn as text — and then a spoken question
-      whose answer is somewhere in that history.
-    </p>
-    <div class="badges">
-      <a class="badge solid" href="https://huggingface.co/datasets/AudioMemory/voxmembench">🤗 Dataset</a>
-      <a class="badge" href="https://github.com/swagshaw/voxmem">Code</a>
-      <span class="badge">CC BY-NC 4.0</span>
-      <span class="badge">English</span>
+    <a class="brand" href="#top" aria-label="VoxMem home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="12" width="4" height="8" rx="2" fill="#F29B4B"/><rect x="10" y="6" width="4" height="20" rx="2" fill="#4A8FE7"/><rect x="17" y="9" width="4" height="14" rx="2" fill="#3DBE7A"/><rect x="24" y="13" width="4" height="6" rx="2" fill="#9C7BE0"/></svg>
+      <span>VoxMem</span>
+    </a>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#taxonomy">Taxonomy</a></li>
+      <li><a href="#leaderboard">Leaderboard</a></li>
+      <li><a href="#findings">Findings</a></li>
+      <li><a href="#construction">Construction</a></li>
+      <li><a href="#bibtex">BibTeX</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="kicker">Benchmark · Spoken Conversational Memory</span>
+    <h1 class="title"><span class="vox">VoxMem</span>: Benchmarking Multimodal Memory in Large Audio Language Models</h1>
+    <p class="subtitle">Do audio language models remember not only <em>what</em> was said, but <em>who</em> said it, <em>how</em> it was said, and <em>what</em> was audible?</p>
+    <div class="authors">
+      <span>Yang Xiao<sup>1</sup></span>
+      <span>Vidhyasaharan Sethu<sup>2</sup></span>
+      <span>Eun-Jung Holden<sup>1</sup></span>
+      <span>Ting Dang<sup>1</sup></span>
+    </div>
+    <div class="affils">
+      <span><sup>1</sup>University of Melbourne</span>
+      <span><sup>2</sup>University of New South Wales</span>
+    </div>
+    <div class="lab">AIMS Lab</div>
+    <div class="buttons">
+      <!-- arXiv: replace this span with
+           <a class="btn" href="https://arxiv.org/abs/XXXX.XXXXX">…arXiv</a> once the ID is assigned -->
+      <span class="btn soon" title="The arXiv link will be added once the paper is announced">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6V2zm8 1.5V8h4.5L14 3.5zM8 12h8v1.5H8V12zm0 3.5h8V17H8v-1.5z"/></svg>arXiv · coming soon</span>
+      <a class="btn" href="https://github.com/swagshaw/voxmem">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>Code</a>
+      <a class="btn" href="https://huggingface.co/datasets/AudioMemory/voxmembench">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7.6 2 4 3.8 4 6v12c0 2.2 3.6 4 8 4s8-1.8 8-4V6c0-2.2-3.6-4-8-4zm0 2c3.9 0 6 1.4 6 2s-2.1 2-6 2-6-1.4-6-2 2.1-2 6-2zM6 8.8C7.5 9.6 9.6 10 12 10s4.5-.4 6-1.2V12c0 .6-2.1 2-6 2s-6-1.4-6-2V8.8zm0 6C7.5 15.6 9.6 16 12 16s4.5-.4 6-1.2V18c0 .6-2.1 2-6 2s-6-1.4-6-2v-3.2z"/></svg>Dataset</a>
+      <a class="btn ghost" href="#leaderboard">Leaderboard</a>
+      <a class="btn ghost" href="#bibtex">BibTeX</a>
     </div>
 
-    <div class="figures">
-      <div class="fig"><b>799</b><span>questions</span></div>
-      <div class="fig"><b>3,196</b><span>items over 4 lengths</span></div>
-      <div class="fig"><b>34,743</b><span>sessions</span></div>
-      <div class="fig"><b>177 h</b><span>of speech</span></div>
+    <div class="stats" role="list" aria-label="Benchmark statistics">
+      <div class="stat" role="listitem"><b>3,196</b><span>evaluation instances</span></div>
+      <div class="stat" role="listitem"><b>799</b><span>questions × 4 lengths</span></div>
+      <div class="stat" role="listitem"><b>34,743</b><span>spoken sessions</span></div>
+      <div class="stat" role="listitem"><b>177 h</b><span>of audio</span></div>
+      <div class="stat" role="listitem"><b>8K–64K</b><span>context budgets</span></div>
+      <div class="stat" role="listitem"><b>15</b><span>LALMs evaluated</span></div>
     </div>
   </div>
 </header>
 
-<div class="wrap">
+<section id="overview">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Overview</h2></div>
+    <p class="lede">Every question is posed over a multi-session spoken history. The answer may depend on what a user said, on which speaker said it, on how it was said, or on what could be heard in the background.</p>
+    <div class="tldr"><span class="tag">TL;DR</span><p>Across 15 LALMs, no model exceeds 40% overall accuracy at 32K. Models retain <em>what</em> was said far better than <em>who</em> said it, <em>how</em>, or <em>what</em> was audible, and the gap grows with history length.</p></div>
+    <figure><a href="static/images/examples.jpg" title="Open full size"><img src="static/images/examples.jpg" width="2200" height="1480" alt="Four representative VoxMem items: (a) Information Extraction × Speaker, (b) Multi-Session Reasoning × Environmental, (c) Temporal Evolution Tracking × Paralinguistic, (d) Answer Refusal × Semantic, each with a timeline of evidence, haystack, and filler sessions and a gold answer."></a>
+      <figcaption><b>Representative VoxMem examples.</b> (a) IE × Speaker: recall a fact from the querying speaker; (b) MSR × Environmental: link sessions by a shared background sound; (c) TET × Paralinguistic: track how a speaker's vocal state changes; (d) AR × Semantic: abstain when evidence is missing.</figcaption>
+    </figure>
 
-<section>
-  <h2>Why audio</h2>
-  <p>
-    A text memory benchmark asks whether a model can find the right sentence
-    again. This one asks something a transcript cannot answer. Three of the four
-    evidence types are carried by the audio signal rather than by the words, so a
-    system that transcribes first and remembers later cannot reach them.
-  </p>
-  <div class="scroll">
-  <table>
-    <thead><tr><th>Evidence type</th><th>The answer depends on</th><th class="num">Items</th></tr></thead>
-    <tbody>
-      <tr><td><span class="dot d-sem"></span><code>speech_semantics</code></td><td>what the user said</td><td class="num">928</td></tr>
-      <tr><td><span class="dot d-spk"></span><code>speaker_information</code></td><td>who was speaking</td><td class="num">588</td></tr>
-      <tr><td><span class="dot d-par"></span><code>paralinguistic_information</code></td><td>how it was said — vocal delivery</td><td class="num">1,056</td></tr>
-      <tr><td><span class="dot d-env"></span><code>environmental_sound</code></td><td>what could be heard around the user</td><td class="num">624</td></tr>
-    </tbody>
-  </table>
+    <div class="narrow" style="margin-top:40px">
+      <h3 style="font-size:20px;margin:0 0 10px">Abstract</h3>
+      <p class="serif">Spoken conversational systems must recover information from prior interactions (i.e., memory), yet relevant information in speech extends beyond what was said to who said it, how it was spoken, and what was audible, information that exists only in the audio signal and cannot be recovered from a transcript. Beyond what to remember, memory also demands diverse operations: retrieving a single fact, integrating evidence across turns, tracking an evolving state. Real interactions further unfold across sessions, meaning information accumulates across distinct episodes rather than a single continuous recording. Existing benchmarks fall short on all three dimensions: they focus primarily on lexical content, adopt limited and ad hoc memory operations, and treat memory as a single-session problem. We argue that principled memory evaluation requires jointly characterizing the acoustic evidence to be retained and the operations applied to it, and introduce a taxonomy along these two axes. Building on this taxonomy, we present VoxMem: 3,196 evaluation instances over 34,743 spoken sessions (177 hours) crossing four acoustic evidence types (speech semantics, speaker identity, paralinguistic cues, environmental sound) with four memory operations (information extraction, multi-session reasoning, temporal tracking, and answer refusal), grounded in multi-session histories and stratified across context budgets from 8K to 64K tokens. Evaluating 15 LALMs, no model exceeds 40% at 32K. Models retain <em>what</em> was said far better than <em>who</em> said it, <em>how</em>, or <em>what</em> was audible, a gap that widens for complex operations, grows with history length, and manifests as qualitatively distinct failure modes across evidence types. VoxMem aims to provide a foundation to measure and drive progress on the full scope of spoken conversational memory.</p>
+    </div>
   </div>
 </section>
 
-<section>
-  <h2>The task</h2>
-  <figure>
-    <svg viewBox="0 0 800 260" role="img" aria-label="Sessions separated by weeks, then a spoken question at the end">
-      <defs>
-        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-          <path d="M0 0 L10 5 L0 10 z" fill="#98a0ae"/>
-        </marker>
-      </defs>
-      <line x1="40" y1="176" x2="762" y2="176" stroke="#d7dbe3" stroke-width="2" marker-end="url(#ar)"/>
+<section id="taxonomy" class="soft">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Two axes of spoken memory</h2></div>
+    <p class="lede"><b>Acoustic evidence</b> specifies <em>what</em> must be recovered from the history; <b>memory operation</b> specifies <em>how</em> it must be used. Their valid combinations form 15 cells. Select a cell to see details.</p>
+    <div class="tax-controls">
+      <div class="seg" role="group" aria-label="Value shown in the matrix">
+        <button type="button" data-mode="share" aria-pressed="true">Share of questions</button>
+        <button type="button" data-mode="acc" aria-pressed="false">Mean accuracy at 32K</button>
+      </div>
+      <div class="legend" aria-hidden="true"><span>low</span><span class="ramp"></span><span>high</span></div>
+    </div>
+    <div class="tax" id="tax" role="group" aria-label="Memory operation by acoustic evidence matrix"></div>
+    <div class="tax-detail" id="tax-detail" aria-live="polite"></div>
 
-      <g font-size="12" font-family="ui-monospace,Menlo,monospace">
-        <!-- filler -->
-        <rect x="42" y="118" width="96" height="46" rx="7" fill="#f2f4f7" stroke="#dfe3ea"/>
-        <text x="90" y="140" text-anchor="middle" fill="#7a818e">filler</text>
-        <text x="90" y="155" text-anchor="middle" fill="#9aa1ad" font-size="10">🔊 ▸ text</text>
-        <text x="90" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Jun 17</text>
-
-        <!-- topical haystack -->
-        <rect x="158" y="118" width="110" height="46" rx="7" fill="#eef2fa" stroke="#d3ddf0"/>
-        <text x="213" y="140" text-anchor="middle" fill="#55607a">topical</text>
-        <text x="213" y="155" text-anchor="middle" fill="#8a94a8" font-size="10">same subject</text>
-        <text x="213" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Jun 23</text>
-
-        <!-- same-key haystack -->
-        <rect x="288" y="112" width="132" height="58" rx="7" fill="#fdf1e7" stroke="#f0d7c2"/>
-        <text x="354" y="134" text-anchor="middle" fill="#a4501f">same-key</text>
-        <text x="354" y="150" text-anchor="middle" fill="#b7784a" font-size="10">shares the cue,</text>
-        <text x="354" y="162" text-anchor="middle" fill="#b7784a" font-size="10">ruled out by the question</text>
-        <text x="354" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Jul 04</text>
-
-        <!-- evidence -->
-        <rect x="440" y="106" width="126" height="70" rx="7" fill="#e9f3ec" stroke="#bcdcc7" stroke-width="1.5"/>
-        <text x="503" y="130" text-anchor="middle" fill="#2f6f4f" font-weight="600">evidence</text>
-        <text x="503" y="147" text-anchor="middle" fill="#4d8467" font-size="10">the answer is</text>
-        <text x="503" y="159" text-anchor="middle" fill="#4d8467" font-size="10">in this audio</text>
-        <text x="503" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Aug 14</text>
-
-        <!-- filler 2 -->
-        <rect x="586" y="118" width="96" height="46" rx="7" fill="#f2f4f7" stroke="#dfe3ea"/>
-        <text x="634" y="140" text-anchor="middle" fill="#7a818e">filler</text>
-        <text x="634" y="155" text-anchor="middle" fill="#9aa1ad" font-size="10">🔊 ▸ text</text>
-        <text x="634" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Aug 29</text>
-
-        <!-- question -->
-        <circle cx="730" cy="141" r="24" fill="#2f5fd0"/>
-        <text x="730" y="146" text-anchor="middle" fill="#fff" font-size="16">?</text>
-        <text x="730" y="196" text-anchor="middle" fill="#98a0ae" font-size="10">Sep 01</text>
-      </g>
-
-      <text x="40" y="42" font-size="13" fill="#5c6370" font-family="inherit">
-        Each session: user turns as audio, assistant turns as text. Weeks apart.
-      </text>
-      <text x="40" y="66" font-size="13" fill="#5c6370" font-family="inherit">
-        The final turn is a spoken question. The model is never given a transcript.
-      </text>
-      <text x="40" y="238" font-size="12" fill="#98a0ae" font-family="inherit">
-        A 64K history runs to a few hundred clips and tens of minutes of audio.
-      </text>
-    </svg>
-    <figcaption>
-      The same-key distractor is what stops length from being free: it shares the
-      question's retrieval key and is excluded only by the selector the question
-      actually states.
-    </figcaption>
-  </figure>
-</section>
-
-<section>
-  <h2>What is measured</h2>
-  <p>
-    Four memory operations cross the four evidence types, giving
-    <b>15 occupied cells</b>. <code>speech_semantics × information_extraction</code>
-    is deliberately empty: reading one fact out of one transcript is not what this
-    benchmark is for.
-  </p>
-  <div class="scroll">
-  <table>
-    <thead><tr><th>Memory operation</th><th>The item asks the model to</th><th class="num">Items</th></tr></thead>
-    <tbody>
-      <tr><td><code>information_extraction</code></td><td>recover one fact from one session</td><td class="num">920</td></tr>
-      <tr><td><code>multi_session_reasoning</code></td><td>combine evidence across sessions</td><td class="num">884</td></tr>
-      <tr><td><code>temporal_evolution_tracking</code></td><td>track how something changed over time</td><td class="num">872</td></tr>
-      <tr><td><code>answer_refusal</code></td><td>recognise that the history does not contain the answer</td><td class="num">520</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <h3>Four context lengths, one question</h3>
-  <p>
-    Every question appears at 8K, 16K, 32K and 64K audio tokens under one
-    <code>question_id</code>. Question, gold answer and evidence are identical
-    across the four; only the surrounding history grows, and it nests —
-    <code>sessions(8K) ⊆ sessions(16K) ⊆ sessions(32K) ⊆ sessions(64K)</code> —
-    so a length comparison holds the item fixed and varies only the distraction.
-    The same-key distractors scale 1 / 2 / 4 / 8 with it.
-  </p>
-</section>
-
-<section>
-  <h2>Download what you need</h2>
-  <p>
-    Every row carries its own history and every clip in it, so no config depends
-    on another. Files are laid out by context length and then by evidence type,
-    with a config at each level.
-  </p>
-  <div class="scroll">
-  <table>
-    <thead><tr><th>Config</th><th class="num">Items</th><th class="num">8K</th><th class="num">16K</th><th class="num">32K</th><th class="num">64K</th></tr></thead>
-    <tbody>
-      <tr><td><code>&lt;length&gt;</code> — all</td><td class="num">799</td><td class="num">4.03 GB</td><td class="num">7.72 GB</td><td class="num">15.38 GB</td><td class="num">32.84 GB</td></tr>
-      <tr><td><span class="dot d-sem"></span><code>…_speech_semantics</code></td><td class="num">232</td><td class="num">1.19</td><td class="num">2.26</td><td class="num">4.50</td><td class="num">9.18</td></tr>
-      <tr><td><span class="dot d-spk"></span><code>…_speaker_information</code></td><td class="num">147</td><td class="num">0.73</td><td class="num">1.41</td><td class="num">2.80</td><td class="num">6.52</td></tr>
-      <tr><td><span class="dot d-par"></span><code>…_paralinguistic_information</code></td><td class="num">264</td><td class="num">1.33</td><td class="num">2.55</td><td class="num">5.12</td><td class="num">10.38</td></tr>
-      <tr><td><span class="dot d-env"></span><code>…_environmental_sound</code></td><td class="num">156</td><td class="num">0.79</td><td class="num">1.50</td><td class="num">2.96</td><td class="num">6.75</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p style="color:var(--muted);font-size:.93rem">
-    Testing whether your system hears vocal delivery at 32K costs 5.12 GB, not
-    the whole 60.
-  </p>
-
-<pre><span class="c"># the whole 32K condition</span>
-ds = load_dataset(<span class="s">"AudioMemory/voxmembench"</span>, <span class="s">"32k"</span>, split=<span class="s">"train"</span>)
-
-<span class="c"># or just the vocal-delivery items at 32K</span>
-ds = load_dataset(<span class="s">"AudioMemory/voxmembench"</span>, <span class="s">"32k_paralinguistic_information"</span>)</pre>
-
-  <div class="note">
-    <b>Every user turn ships its transcript alongside its audio</b>, so the
-    benchmark can be read as well as heard and a text-only run gives the ceiling
-    the audio numbers are measured against. The transcript is the words only —
-    the cue markers that drove the delivery are not in it, which is what keeps
-    the paralinguistic, speaker and environmental items out of a reader's reach.
-    Do not put the transcripts in the prompt for a listening run.
+    <div class="defs">
+      <div class="card">
+        <h3>Acoustic evidence: what the answer depends on</h3>
+        <dl>
+          <dt><span class="chip c-sem">Speech Semantics</span></dt><dd>what the user said; the transcript-sufficient reference</dd>
+          <dt><span class="chip c-spk">Speaker Identity</span></dt><dd>who was speaking</dd>
+          <dt><span class="chip c-par">Paralinguistic Cues</span></dt><dd>how it was said: vocal delivery, such as emotion</dd>
+          <dt><span class="chip c-env">Environmental Sound</span></dt><dd>what could be heard around the user</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>Memory operation: what the question asks for</h3>
+        <dl>
+          <dt>IE · Information Extraction</dt><dd>recover one fact from one session</dd>
+          <dt>MSR · Multi-Session Reasoning</dt><dd>combine evidence across sessions</dd>
+          <dt>TET · Temporal Evolution Tracking</dt><dd>track how something changed over time</dd>
+          <dt>AR · Answer Refusal</dt><dd>recognise that the history does not contain the answer</dd>
+        </dl>
+      </div>
+    </div>
   </div>
 </section>
 
-<section>
-  <h2>Scoring</h2>
-  <p>
-    Accuracy, reported for two strata that are never averaged together.
-    Answers are open ended, so an LLM judge settles equivalence — and it sees
-    only the question, the gold and the response, never the audio and never the
-    history, so it cannot answer the item itself.
-  </p>
-  <div class="scroll">
-  <table>
-    <thead><tr><th>Stratum</th><th class="num">Items</th><th>Correct when</th></tr></thead>
-    <tbody>
-      <tr><td><code>answerable</code></td><td class="num">2,676</td><td>the response means the same as the gold answer</td></tr>
-      <tr><td><code>answer_refusal</code></td><td class="num">520</td><td>the response says the evidence is insufficient</td></tr>
-    </tbody>
-  </table>
+<section id="leaderboard">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Leaderboard</h2></div>
+    <p class="lede">Accuracy (%) over all 799 questions at each reference history budget, broken down by answer-critical evidence type. Answer Refusal items are included, with appropriate abstention counted as correct. Click a column header to sort.</p>
+    <div class="lb-controls">
+      <div class="seg" role="group" aria-label="Context length">
+        <button type="button" data-len="0" aria-pressed="false">8K</button>
+        <button type="button" data-len="1" aria-pressed="false">16K</button>
+        <button type="button" data-len="2" aria-pressed="true">32K</button>
+        <button type="button" data-len="3" aria-pressed="false">64K</button>
+      </div>
+      <div class="seg" role="group" aria-label="Model type">
+        <button type="button" data-type="all" aria-pressed="true">All</button>
+        <button type="button" data-type="Proprietary" aria-pressed="false">Proprietary</button>
+        <button type="button" data-type="Open-weight" aria-pressed="false">Open-weight</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="lb" id="lb">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Model</th>
+            <th scope="col">Type</th>
+            <th scope="col"><button type="button" data-key="semantics"><span class="chip c-sem">Semantics</span></button></th>
+            <th scope="col"><button type="button" data-key="speaker"><span class="chip c-spk">Speaker</span></button></th>
+            <th scope="col"><button type="button" data-key="paralinguistic"><span class="chip c-par">Paralinguistic</span></button></th>
+            <th scope="col"><button type="button" data-key="environmental"><span class="chip c-env">Environmental</span></button></th>
+            <th scope="col"><button type="button" data-key="overall" data-dir="desc">Overall</button></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note" id="lb-note"></p>
   </div>
-  <p>
-    Report per context length and per cell as well. The aggregate hides that the
-    audio-only cells behave nothing like the semantic ones — which is the point
-    of the benchmark.
-  </p>
-<pre><span class="c"># runner and scorer</span>
-git clone https://github.com/swagshaw/voxmem && cd voxmem
+</section>
+
+<section id="findings" class="soft">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Key findings</h2></div>
+    <p class="lede">Each question and its required evidence are held fixed across context budgets, so changes in accuracy across lengths reflect the history, not the question.</p>
+    <div class="findings">
+      <article class="finding">
+        <div class="no">1</div>
+        <div><h3>Current LALMs remain far from reliable spoken conversational memory.</h3>
+        <p>At the 32K budget no evaluated model exceeds 40% overall accuracy; the strongest reaches 38.5%. The five proprietary models average 33.0% and the ten open-weight models 21.9%.</p></div>
+      </article>
+      <article class="finding">
+        <div class="no">2</div>
+        <div><h3>Non-lexical acoustic information is substantially less accessible than speech semantics.</h3>
+        <p>At 32K, proprietary models average 55.6% on <span class="chip c-sem">Speech Semantics</span>, but 32.7% on <span class="chip c-spk">Speaker Identity</span>, 20.0% on <span class="chip c-par">Paralinguistic Cues</span> and 21.9% on <span class="chip c-env">Environmental Sound</span>. Open-weight models show the same separation (31.6%, 26.7%, 14.5% and 15.5%).</p></div>
+      </article>
+      <article class="finding">
+        <div class="no">3</div>
+        <div><h3>Memory difficulty depends on the interaction between the operation and the evidence type.</h3>
+        <p>Multi-session reasoning is relatively robust (41.8% on semantics, 43.1% on speaker identity). Temporal tracking works for semantics (44.5%) but nearly collapses for paralinguistic (3.4%) and environmental (1.2%) evidence: maintaining states carried by vocal delivery or ambient sound is the bottleneck, not temporal reasoning alone. Explore the cells in the <a href="#taxonomy">matrix above</a>.</p></div>
+      </article>
+      <article class="finding">
+        <div class="no">4</div>
+        <div><h3>Answer refusal follows a different profile from answering.</h3>
+        <p>Models abstain more successfully on paralinguistic and environmental questions (34.3% and 34.2%) than on semantics and speaker identity (19.9% and 16.2%), the reverse of answerable questions. This suggests that high refusal accuracy on acoustic questions reflects difficulty using acoustic evidence rather than genuine awareness that it is missing.</p></div>
+      </article>
+      <article class="finding">
+        <div class="no">5</div>
+        <div><h3>Access to the same evidence declines as history grows, at different rates across evidence types.</h3>
+        <p>From 8K to 32K, mean accuracy drops from 40.1% to 33.0% for proprietary models and from 26.6% to 21.9% for open-weight models, and the decline continues to 64K for all four evidence types. At 64K, models retain 70.3% of their 8K accuracy on speech semantics and 69.8% on paralinguistic cues, against 66.5% for speaker identity and 63.2% for environmental sound.</p></div>
+        <figure><a href="static/images/scaling.png" title="Open full size"><img src="static/images/scaling.png" width="1584" height="432" alt="Line plots of accuracy by evidence type from 8K to 64K: raw accuracy on the left and retention relative to each type's 8K baseline on the right."></a>
+          <figcaption><b>Accuracy scaling by evidence type (8K–64K).</b> Left: raw accuracy. Right: retention relative to each type's own 8K baseline.</figcaption>
+        </figure>
+      </article>
+      <article class="finding">
+        <div class="no">6</div>
+        <div><h3>Error profiles differ qualitatively across both evidence types and memory operations.</h3>
+        <p>Speaker errors are most often binding failures (48%): the cue is recovered but attached to the wrong person. Paralinguistic errors are dominated by localization failures (63%): the answer-critical vocal cue is often not retrieved at all. Environmental errors split between localization (41%) and unsupported answers (39%).</p></div>
+        <ul class="err-legend" aria-label="Error classes">
+          <li style="--c:#338DDE">Evidence recognition / localization</li>
+          <li style="--c:#F17D42">Binding / association</li>
+          <li style="--c:#0FB98C">Operation execution</li>
+          <li style="--c:#F1AF00">Unsupported answer</li>
+          <li style="--c:#D3D2CE">Not attributable from the response</li>
+        </ul>
+        <div class="pair">
+          <figure><a href="static/images/errors_operation.png" title="Open full size"><img src="static/images/errors_operation.png" width="1152" height="282" alt="Stacked bars of error classes at 64K for the IE, MSR and TET memory operations."></a><figcaption>(a) by memory operation</figcaption></figure>
+          <figure><a href="static/images/errors_evidence.png" title="Open full size"><img src="static/images/errors_evidence.png" width="1152" height="282" alt="Stacked bars of error classes at 64K for the speaker, paralinguistic and environmental evidence types."></a><figcaption>(b) by evidence type</figcaption></figure>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="construction">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">05</span><h2>How VoxMem is built</h2></div>
+    <p class="lede">Questions are planned from an operation, an evidence type and an answer; evidence is realized as spoken dialogue with controlled acoustic cues; histories are built at 8K–64K with the question and evidence fixed; multi-stage quality control validates each step.</p>
+    <figure><a href="static/images/workflow.jpg" title="Open full size"><img src="static/images/workflow.jpg" width="2400" height="1200" alt="The VoxMem construction pipeline: task and evidence design, dialogue and audio realization, variants and context assembly with haystack and filler sessions, and validation into the final benchmark."></a>
+      <figcaption><b>Construction pipeline.</b> Histories nest across budgets, so a length comparison holds the item fixed and varies only the surrounding sessions.</figcaption>
+    </figure>
+    <div class="two">
+      <div>
+        <h3 style="margin:0 0 8px;font-size:18px">Audio is required, by construction</h3>
+        <p style="margin:0 0 12px;color:var(--ink-2)">Replacing every user turn with its exact transcript barely changes accuracy on speech semantics, but removes most of the signal for the three audio-native evidence types. Answering them requires the audio itself.</p>
+        <p style="margin:0;color:var(--ink-2)">Distractor sessions are labelled per history: <b>haystack</b> sessions share the question's topic or retrieval key and are ruled out only by the selector the question states, and <b>filler</b> sessions pad the history to the target budget.</p>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <table class="plain">
+          <caption style="caption-side:bottom;text-align:left;font-size:13px;color:var(--muted);padding-top:10px">Accuracy (%) of Gemini-3.7-Flash on the 669 answerable questions at 8K, with full audio versus transcripts only.</caption>
+          <thead><tr><th>Evidence type</th><th><i>n</i></th><th>Full audio</th><th>Transcript</th><th>Δ</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip c-spk">Speaker</span></td><td>126</td><td>69.8</td><td>10.3</td><td class="delta">59.5</td></tr>
+            <tr><td><span class="chip c-par">Paralinguistic</span></td><td>222</td><td>42.8</td><td>3.2</td><td class="delta">39.6</td></tr>
+            <tr><td><span class="chip c-env">Environmental</span></td><td>126</td><td>28.6</td><td>0.8</td><td class="delta">27.8</td></tr>
+            <tr><td><span class="chip c-sem">Semantics</span></td><td>195</td><td>75.9</td><td>71.0</td><td class="delta">4.9</td></tr>
+            <tr class="all"><td>All</td><td>669</td><td>54.9</td><td>23.8</td><td class="delta">31.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="start" class="soft">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Get started</h2></div>
+    <p class="lede">The data streams from the Hugging Face Hub; pick a context length and, optionally, a single evidence type. See the <a href="https://github.com/swagshaw/voxmem#readme">README</a> for local models, cluster runs and the output format.</p>
+<pre><span class="c"># install</span>
 pip install -r requirements.txt
 
-python run_voxmembench.py --config 32k --model gemini:gemini-2.5-flash \
+<span class="c"># smoke test: the abstain baseline must score 1.0 on refusal and 0.0 on answerable</span>
+python run_voxmembench.py --config 8k_speaker_information \
+    --model abstain --allow-abstention --limit 25 --out predictions_smoke.jsonl
+python score_voxmembench.py --predictions predictions_smoke.jsonl --judge exact-match
+
+<span class="c"># a real run at 32K, scored by an LLM judge</span>
+python run_voxmembench.py --config 32k --model openai:gpt-4o-audio-preview \
     --allow-abstention --out predictions_32k.jsonl
 python score_voxmembench.py --predictions predictions_32k.jsonl \
-    --judge openai:gpt-4o-mini</pre>
-  <p style="color:var(--muted);font-size:.93rem">
-    Local models plug in through a one-function adapter; a Slurm job-array
-    submitter and a resumable matrix runner ship with the code.
-  </p>
+    --judge openai:gpt-4o-mini --out metrics_32k.json</pre>
+  </div>
 </section>
 
-<section>
-  <h2>How the data was made</h2>
-  <p>
-    User speech is synthetic, voice-cloned from 30 reference speakers of the
-    <a href="https://doi.org/10.7488/ds/2645">CSTR VCTK Corpus</a>; the persona
-    profiles are fictional and are not recoverable from the voice. Assistant
-    turns are text and were never spoken. Environmental sound comes from
-    <a href="https://doi.org/10.7910/DVN/YDEPUT">ESC-50</a>, mixed into the user
-    speech at a target SNR rather than appended, so it is present <em>while</em>
-    the user talks. Paralinguistic cues are rendered as vocal delivery in the
-    cloned speech. All audio is 24 kHz mono.
-  </p>
-  <p>
-    Gold answers, evidence-session annotations and evidence positions are all
-    public. There is no hidden split and no submission server: the benchmark is
-    meant to be run locally and analysed.
-  </p>
-</section>
-
-<section>
-  <h2>Citation</h2>
-<pre>@misc{voxmembench2026,
-  title  = {VoxMemBench: Long-Term Spoken Conversational Memory},
-  author = {The VoxMemBench authors},
-  year   = {2026},
-  url    = {https://huggingface.co/datasets/AudioMemory/voxmembench}
+<section id="bibtex">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">07</span><h2>BibTeX</h2></div>
+    <p class="lede">If you find VoxMem useful, please cite:</p>
+    <div class="bib">
+<pre id="bib-text">@article{xiao2026voxmem,
+  title   = {VoxMem: Benchmarking Multimodal Memory in Large Audio Language Models},
+  author  = {Xiao, Yang and Sethu, Vidhyasaharan and Holden, Eun-Jung and Dang, Ting},
+  journal = {arXiv preprint arXiv:XXXX.XXXXX},
+  year    = {2026}
 }</pre>
-  <p style="font-size:.93rem;color:var(--muted)">
-    The dataset is CC BY-NC 4.0 — the non-commercial term follows from ESC-50.
-    Attribution is required for VCTK and for ESC-50. The evaluation code is MIT.
-  </p>
+      <button type="button" class="copy" id="copy-bib">Copy</button>
+    </div>
+  </div>
 </section>
-
-</div>
 
 <footer>
   <div class="wrap">
-    <span>VoxMemBench</span>
-    <span>
-      <a href="https://huggingface.co/datasets/AudioMemory/voxmembench">Dataset</a> ·
-      <a href="https://github.com/swagshaw/voxmem">Code</a>
-    </span>
+    <span>© 2026 The VoxMem authors · AIMS Lab</span>
+    <span>Code: MIT · Data: <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></span>
   </div>
 </footer>
 
+<script>
+(function () {
+  // ---- Leaderboard data: Figure 4 (8K/16K/32K) and Appendix Table "Full 64K Results" ----
+  // Arrays are [8K, 16K, 32K, 64K]; models without a 64K run have three values.
+  var MODELS = [
+    ["Qwen3.8-Omni-Flash","Proprietary",[65.1,65.1,60.3],[52.4,47.6,42.2],[27.7,26.1,25.4],[26.3,19.2,25.0],[42.8,40.1,38.5]],
+    ["Gemini-3.1-Pro","Proprietary",[72.0,69.0,68.5,68.5],[39.5,40.8,29.3,26.5],[30.3,23.1,19.7,19.7],[23.1,21.2,21.2,15.4],[42.7,39.3,35.9,34.3]],
+    ["Gemini-3.8-Flash","Proprietary",[65.5,65.5,54.3,50.9],[51.0,50.3,41.5,38.1],[24.6,23.9,20.8,16.7],[27.6,23.7,19.2,15.4],[41.9,40.8,34.0,30.3]],
+    ["Qwen3.5-Omni-Plus","Proprietary",[63.8,56.9,56.0],[47.6,35.4,31.3],[25.8,22.3,19.3],[25.6,25.0,23.7],[40.8,35.3,33.0]],
+    ["Gemini-2.5-Pro","Proprietary",[56.0,45.3,38.8,35.8],[24.5,21.1,19.0,14.3],[20.5,17.4,14.8,14.4],[24.4,21.2,20.5,16.7],[32.3,26.9,23.7,21.0]],
+    ["Qwen3-Omni-30B-A3B","Open-weight",[46.1,41.4,38.4,31.5],[36.1,19.0,25.2,21.8],[23.1,15.5,20.1,15.9],[23.7,20.5,18.6,11.5],[32.3,24.7,26.0,20.7]],
+    ["Gemma-4-E4B-it","Open-weight",[50.4,44.0,35.8,27.2],[33.3,28.6,29.3,24.5],[19.7,16.7,14.0,12.9],[20.5,19.9,16.7,11.5],[31.3,27.4,23.7,18.9]],
+    ["MiniCPM-o-4.5","Open-weight",[43.5,43.5,31.0],[38.1,34.0,28.6],[21.2,14.4,11.4],[17.9,17.9,18.6],[30.2,27.2,21.7]],
+    ["Ultravox-v0.6-Llama-3.1-8B","Open-weight",[44.0,41.8,35.3,28.0],[42.2,32.0,31.3,29.3],[15.2,14.0,15.5,12.9],[15.4,12.2,17.3,17.9],[28.5,25.0,24.5,21.3]],
+    ["Audio-Flamingo-Next","Open-weight",[40.1,35.3,31.9,26.3],[36.1,27.9,23.8,22.4],[17.0,17.8,15.2,12.9],[16.7,14.7,13.5,9.0],[27.2,24.2,21.3,17.8]],
+    ["Baichuan-Audio-7B","Open-weight",[40.9,41.4,30.6,26.7],[36.1,38.8,35.4,29.3],[15.2,15.9,13.3,9.8],[13.5,15.4,13.5,7.1],[26.2,27.4,22.4,17.8]],
+    ["MiMo-Audio-7B-Instruct","Open-weight",[35.8,34.5,27.2],[32.7,29.3,23.1],[16.3,15.2,13.3],[19.9,19.9,18.6],[25.7,24.3,20.2]],
+    ["FireRedAudio-9B","Open-weight",[33.6,28.4,28.9,22.0],[27.2,26.5,25.9,11.6],[17.4,16.3,15.2,10.2],[18.6,21.8,14.7,8.3],[24.2,22.8,21.0,13.5]],
+    ["Phi-4-Multimodal","Open-weight",[31.9,27.6,27.6],[36.1,26.5,27.9],[9.1,13.6,14.0],[8.3,20.5,13.5],[20.5,21.4,20.4]],
+    ["Baichuan-Omni-1.5-7B","Open-weight",[31.0,31.9,28.9,20.3],[21.8,18.4,17.0,13.6],[12.9,12.9,12.9,11.4],[13.5,17.9,10.3,11.5],[19.9,20.4,17.8,14.4]]
+  ];
+  var MEANS = { // group means reported in the paper, [8K,16K,32K,64K]
+    "Proprietary": {label:"Mean proprietary", n:[5,5,5,3], v:{semantics:[64.5,60.3,55.6],speaker:[43.0,39.0,32.7],paralinguistic:[25.8,22.6,20.0],environmental:[25.4,22.1,21.9],overall:[40.1,36.5,33.0,28.5]}},
+    "Open-weight": {label:"Mean open-weight", n:[10,10,10,7], v:{semantics:[39.7,37.0,31.6],speaker:[33.9,28.1,26.7],paralinguistic:[16.7,15.2,14.5],environmental:[16.8,18.1,15.5],overall:[26.6,24.5,21.9,17.8]}}
+  };
+  // 64K group means by evidence type (Appendix table)
+  MEANS["Proprietary"].v.semantics[3]=51.7; MEANS["Proprietary"].v.speaker[3]=26.3; MEANS["Proprietary"].v.paralinguistic[3]=16.9; MEANS["Proprietary"].v.environmental[3]=15.8;
+  MEANS["Open-weight"].v.semantics[3]=26.0; MEANS["Open-weight"].v.speaker[3]=21.8; MEANS["Open-weight"].v.paralinguistic[3]=12.3; MEANS["Open-weight"].v.environmental[3]=11.0;
+
+  var KEYS = ["semantics","speaker","paralinguistic","environmental","overall"];
+  var COLOR = {semantics:"var(--sem)",speaker:"var(--spk)",paralinguistic:"var(--par)",environmental:"var(--env)",overall:"var(--accent)"};
+  var LENS = ["8K","16K","32K","64K"];
+  var rows = MODELS.map(function (m) { return {model:m[0], type:m[1], semantics:m[2], speaker:m[3], paralinguistic:m[4], environmental:m[5], overall:m[6]}; });
+  var state = {len:2, type:"all", key:"overall", dir:"desc"};
+  var tbody = document.querySelector("#lb tbody");
+
+  function fmt(x) { return x.toFixed(1); }
+  function cell(key, v, best) {
+    return '<td class="num' + (key === "overall" ? " overall" : "") + (best ? " best" : "") +
+      '" style="--c:' + COLOR[key] + ';--w:' + v.toFixed(1) + '%">' + fmt(v) + "</td>";
+  }
+  function render() {
+    var L = state.len;
+    var list = rows.filter(function (r) { return r.overall.length > L && (state.type === "all" || r.type === state.type); });
+    list.sort(function (a, b) { var d = a[state.key][L] - b[state.key][L]; return state.dir === "desc" ? -d : d; });
+    var best = {};
+    KEYS.forEach(function (k) { best[k] = Math.max.apply(null, list.map(function (r) { return r[k][L]; })); });
+    var html = list.map(function (r, i) {
+      return "<tr><td class=\"rank\">" + (i + 1) + "</td><td class=\"model\">" + r.model + "</td><td><span class=\"badge" +
+        (r.type === "Proprietary" ? " prop" : "") + "\">" + r.type + "</span></td>" +
+        KEYS.map(function (k) { return cell(k, r[k][L], r[k][L] === best[k]); }).join("") + "</tr>";
+    }).join("");
+    ["Proprietary","Open-weight"].forEach(function (t) {
+      if (state.type !== "all" && state.type !== t) return;
+      var m = MEANS[t];
+      html += "<tr class=\"mean\"><td class=\"rank\"></td><td class=\"model\">" + m.label + " (" + m.n[L] + ")</td><td></td>" +
+        KEYS.map(function (k) { return cell(k, m.v[k][L], false); }).join("") + "</tr>";
+    });
+    tbody.innerHTML = html;
+    document.getElementById("lb-note").textContent = (L === 3
+      ? "64K: the ten models that can process the full 64K histories. "
+      : "") + "Question counts per type: Semantics 232, Speaker 147, Paralinguistic 264, Environmental 156 (799 overall). Responses are scored by an LLM judge (Gemini-3.7-Flash), cross-checked with GPT-5.6-Luna. Dots mark the best model in each column at " + LENS[L] + ".";
+  }
+  document.querySelectorAll("[data-len]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      state.len = +b.dataset.len;
+      document.querySelectorAll("[data-len]").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      render();
+    });
+  });
+  document.querySelectorAll("[data-type]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      state.type = b.dataset.type;
+      document.querySelectorAll("[data-type]").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      render();
+    });
+  });
+  document.querySelectorAll("#lb th button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var k = b.dataset.key;
+      state.dir = (state.key === k && state.dir === "desc") ? "asc" : "desc";
+      state.key = k;
+      document.querySelectorAll("#lb th button").forEach(function (x) { x.removeAttribute("data-dir"); });
+      b.setAttribute("data-dir", state.dir);
+      render();
+    });
+  });
+  render();
+
+  // ---- Taxonomy matrix: share of the 799 questions (Figure 1a) and mean accuracy of 15 LALMs at 32K (Figure 5) ----
+  var EV = [
+    {key:"sem", name:"Speech Semantics", short:"Sem.", note:"what was said"},
+    {key:"spk", name:"Speaker Identity", short:"Spk.", note:"who said it"},
+    {key:"par", name:"Paralinguistic Cues", short:"Para.", note:"how it was said"},
+    {key:"env", name:"Environmental Sound", short:"Env.", note:"what was audible"}
+  ];
+  var OPS = [
+    {key:"IE", name:"Information Extraction"},
+    {key:"MSR", name:"Multi-Session Reasoning"},
+    {key:"TET", name:"Temporal Evolution Tracking"},
+    {key:"AR", name:"Answer Refusal"}
+  ];
+  var GRID = { // [share %, n, mean accuracy % at 32K]
+    IE:  [null, [8.1,65,29.0], [13.4,107,8.8], [7.3,58,13.5]],
+    MSR: [[10.6,85,41.8], [4.3,34,43.1], [8.3,66,26.7], [4.5,36,25.2]],
+    TET: [[13.8,110,44.5], [3.4,27,20.0], [6.1,49,3.4], [4.0,32,1.2]],
+    AR:  [[4.6,37,19.9], [2.6,21,16.2], [5.3,42,34.3], [3.8,30,34.2]]
+  };
+  var mode = "share", selected = null;
+  var tax = document.getElementById("tax"), detail = document.getElementById("tax-detail");
+
+  function buildTax() {
+    var h = '<div class="corner">operation ↓ · evidence →</div>';
+    EV.forEach(function (e) {
+      h += '<div class="colh c-' + e.key + '"><span class="long">' + e.name + '</span><span class="short">' + e.short + '</span><small>' + e.note + '</small></div>';
+    });
+    OPS.forEach(function (o) {
+      h += '<div class="rowh"><b>' + o.key + '</b><span>' + o.name + '</span></div>';
+      EV.forEach(function (e, j) {
+        var c = GRID[o.key][j];
+        if (!c) { h += '<div class="cell excluded" title="Excluded by design"><span class="v">excluded</span><span class="n">by design</span></div>'; return; }
+        h += '<button type="button" class="cell c-' + e.key + '" data-op="' + o.key + '" data-ev="' + j + '" aria-pressed="false"><span class="v"></span><span class="n"></span></button>';
+      });
+    });
+    tax.innerHTML = h;
+    tax.querySelectorAll("button.cell").forEach(function (b) {
+      b.addEventListener("click", function () { select(b.dataset.op, +b.dataset.ev); });
+    });
+  }
+  function paint() {
+    var maxShare = 13.8, maxAcc = 44.5;
+    tax.querySelectorAll("button.cell").forEach(function (b) {
+      var c = GRID[b.dataset.op][+b.dataset.ev];
+      var val = mode === "share" ? c[0] : c[2];
+      var t = mode === "share" ? val / maxShare : val / maxAcc;
+      b.style.background = "color-mix(in srgb, var(--c) " + Math.round(10 + 62 * t) + "%, #fff)";
+      b.querySelector(".v").textContent = val.toFixed(1) + "%";
+      b.querySelector(".n").textContent = "n = " + c[1];
+      b.setAttribute("aria-label", OPS.filter(function (o) { return o.key === b.dataset.op; })[0].name + " × " + EV[+b.dataset.ev].name + ": " +
+        (mode === "share" ? val.toFixed(1) + "% of questions" : val.toFixed(1) + "% mean accuracy at 32K") + ", " + c[1] + " questions");
+    });
+  }
+  function select(op, j) {
+    selected = [op, j];
+    tax.querySelectorAll("button.cell").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.op === op && +b.dataset.ev === j); });
+    var c = GRID[op][j], o = OPS.filter(function (x) { return x.key === op; })[0], e = EV[j];
+    detail.innerHTML = "<b>" + o.name + " × " + e.name + "</b>: " + c[1] + " questions (" + c[0].toFixed(1) +
+      "% of 799), each asked at four context lengths. Mean accuracy of the 15 LALMs at 32K: <b>" + c[2].toFixed(1) + "%</b>.";
+  }
+  document.querySelectorAll("[data-mode]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      mode = b.dataset.mode;
+      document.querySelectorAll("[data-mode]").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      paint();
+    });
+  });
+  buildTax(); paint(); select("TET", 2);
+
+  // ---- Copy BibTeX ----
+  var copyBtn = document.getElementById("copy-bib");
+  copyBtn.addEventListener("click", function () {
+    var text = document.getElementById("bib-text").textContent;
+    var done = function () { copyBtn.textContent = "Copied"; setTimeout(function () { copyBtn.textContent = "Copy"; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, function () {}); }
+  });
+})();
+</script>
 </body>
 </html>
