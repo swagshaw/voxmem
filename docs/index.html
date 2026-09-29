@@ -65,8 +65,6 @@ h1.title .vox{background:linear-gradient(90deg,var(--sem),var(--spk) 38%,var(--p
 .btn svg{width:17px;height:17px;fill:currentColor}
 .btn.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
 .btn.ghost:hover{background:var(--bg-soft)}
-.btn.soon{background:#fff;color:var(--muted);border:1px dashed #B9C0CF;cursor:default}
-.btn.soon:hover{transform:none}
 
 /* stats band */
 .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:40px auto 0;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
@@ -105,6 +103,7 @@ figcaption b{color:var(--ink)}
 .seg{display:inline-flex;background:#fff;border:1px solid var(--rule);border-radius:999px;padding:3px}
 .seg button{font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:transparent;border:0;border-radius:999px;padding:6px 14px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.seg .sm{display:none}
 .seg button:focus-visible,.cell:focus-visible,th button:focus-visible{outline:2px solid var(--link);outline-offset:2px}
 .tax{display:grid;grid-template-columns:minmax(118px,1.1fr) repeat(4,minmax(0,1fr));gap:8px}
 .tax .corner{font-size:12px;color:var(--muted);align-self:end;padding:0 4px 6px;line-height:1.3}
@@ -171,7 +170,8 @@ table.lb tbody tr:hover td{background-color:#F7F9FD}
 .err-legend li::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--c)}
 
 /* construction */
-.two{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;align-items:start;margin-top:24px}
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px;align-items:start;margin-top:24px}
+.table-card{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.plain{width:100%;border-collapse:collapse;font-size:14.5px}
 table.plain th,table.plain td{padding:8px 10px;text-align:right;border-bottom:1px solid #EDF0F5;white-space:nowrap}
 table.plain th:first-child,table.plain td:first-child{text-align:left}
@@ -193,12 +193,18 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   .stats{grid-template-columns:repeat(3,1fr)}
   .stat:nth-child(3){border-right:0}
   .stat:nth-child(-n+3){border-bottom:1px solid var(--rule)}
-  .defs,.two{grid-template-columns:1fr}
+  .defs,.two{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:600px){
   header.hero{padding:40px 0 28px}
   .kicker{font-size:10.5px;letter-spacing:.08em}
   .seg button{white-space:nowrap;font-size:13px;padding:6px 11px}
+  .seg .lg{display:none} .seg .sm{display:inline}
+  table.plain th,table.plain td{padding:7px 6px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat,.stat:nth-child(3){border-right:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .stat:nth-child(2n){border-right:0}
+  .stat:nth-child(n+5){border-bottom:0}
   .tax .corner{font-size:0}
   nav.site ul{gap:14px}
   .brand span{display:none}
@@ -256,10 +262,10 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
     </div>
     <div class="lab">AIMS Lab</div>
     <div class="buttons">
-      <!-- arXiv: replace this span with
-           <a class="btn" href="https://arxiv.org/abs/XXXX.XXXXX">…arXiv</a> once the ID is assigned -->
-      <span class="btn soon" title="The arXiv link will be added once the paper is announced">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6V2zm8 1.5V8h4.5L14 3.5zM8 12h8v1.5H8V12zm0 3.5h8V17H8v-1.5z"/></svg>arXiv · coming soon</span>
+      <a class="btn" href="https://arxiv.org/abs/2609.32607">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6V2zm8 1.5V8h4.5L14 3.5zM8 12h8v1.5H8V12zm0 3.5h8V17H8v-1.5z"/></svg>arXiv</a>
+      <a class="btn" href="https://arxiv.org/pdf/2609.32607">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6V3h2zM5 19h14v2H5v-2z"/></svg>PDF</a>
       <a class="btn" href="https://github.com/swagshaw/voxmem">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>Code</a>
       <a class="btn" href="https://huggingface.co/datasets/AudioMemory/voxmembench">
@@ -301,8 +307,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
     <p class="lede"><b>Acoustic evidence</b> specifies <em>what</em> must be recovered from the history; <b>memory operation</b> specifies <em>how</em> it must be used. Their valid combinations form 15 cells. Select a cell to see details.</p>
     <div class="tax-controls">
       <div class="seg" role="group" aria-label="Value shown in the matrix">
-        <button type="button" data-mode="share" aria-pressed="true">Share of questions</button>
-        <button type="button" data-mode="acc" aria-pressed="false">Mean accuracy at 32K</button>
+        <button type="button" data-mode="share" aria-pressed="true"><span class="lg">Share of questions</span><span class="sm">Share</span></button>
+        <button type="button" data-mode="acc" aria-pressed="false"><span class="lg">Mean accuracy at 32K</span><span class="sm">Accuracy · 32K</span></button>
       </div>
       <div class="legend" aria-hidden="true"><span>low</span><span class="ramp"></span><span>high</span></div>
     </div>
@@ -436,7 +442,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
         <p style="margin:0 0 12px;color:var(--ink-2)">Replacing every user turn with its exact transcript barely changes accuracy on speech semantics, but removes most of the signal for the three audio-native evidence types. Answering them requires the audio itself.</p>
         <p style="margin:0;color:var(--ink-2)">Distractor sessions are labelled per history: <b>haystack</b> sessions share the question's topic or retrieval key and are ruled out only by the selector the question states, and <b>filler</b> sessions pad the history to the target budget.</p>
       </div>
-      <div class="card" style="padding:14px 16px">
+      <div class="card table-card" style="padding:14px 16px">
         <table class="plain">
           <caption style="caption-side:bottom;text-align:left;font-size:13px;color:var(--muted);padding-top:10px">Accuracy (%) of Gemini-3.7-Flash on the 669 answerable questions at 8K, with full audio versus transcripts only.</caption>
           <thead><tr><th>Evidence type</th><th><i>n</i></th><th>Full audio</th><th>Transcript</th><th>Δ</th></tr></thead>
@@ -481,7 +487,7 @@ python score_voxmembench.py --predictions predictions_32k.jsonl \
 <pre id="bib-text">@article{xiao2026voxmem,
   title   = {VoxMem: Benchmarking Multimodal Memory in Large Audio Language Models},
   author  = {Xiao, Yang and Sethu, Vidhyasaharan and Holden, Eun-Jung and Dang, Ting},
-  journal = {arXiv preprint arXiv:XXXX.XXXXX},
+  journal = {arXiv preprint arXiv:2609.32607},
   year    = {2026}
 }</pre>
       <button type="button" class="copy" id="copy-bib">Copy</button>

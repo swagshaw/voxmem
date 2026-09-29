@@ -14,8 +14,7 @@
 
 <p align="center">
   <a href="https://swagshaw.github.io/voxmem/"><img alt="Project page" src="https://img.shields.io/badge/Project-Page-2D4A8A"></a>
-  <!-- arXiv: replace with <a href="https://arxiv.org/abs/XXXX.XXXXX"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b"></a> -->
-  <img alt="arXiv coming soon" src="https://img.shields.io/badge/arXiv-coming%20soon-lightgrey">
+  <a href="https://arxiv.org/abs/2609.32607"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2609.32607-b31b1b"></a>
   <a href="https://huggingface.co/datasets/AudioMemory/voxmembench"><img alt="Dataset" src="https://img.shields.io/badge/%F0%9F%A4%97-Dataset-blue"></a>
   <a href="LICENSE"><img alt="Code licence" src="https://img.shields.io/badge/code-MIT-green"></a>
   <a href="https://creativecommons.org/licenses/by-nc/4.0/"><img alt="Data licence" src="https://img.shields.io/badge/data-CC%20BY--NC%204.0-lightgrey"></a>
@@ -28,7 +27,7 @@
 
 ## News
 
-- **2026-09** — Code and data released. The paper will be on arXiv shortly.
+- **2026-09** — Paper released on [arXiv](https://arxiv.org/abs/2609.32607); code and data released.
 
 ## Overview
 
@@ -405,7 +404,7 @@ If you find VoxMem useful, please cite:
 @article{xiao2026voxmem,
   title   = {VoxMem: Benchmarking Multimodal Memory in Large Audio Language Models},
   author  = {Xiao, Yang and Sethu, Vidhyasaharan and Holden, Eun-Jung and Dang, Ting},
-  journal = {arXiv preprint arXiv:XXXX.XXXXX},
+  journal = {arXiv preprint arXiv:2609.32607},
   year    = {2026}
 }
 ```
