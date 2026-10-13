@@ -223,6 +223,8 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
 }
 @media (min-width:601px){ .tax .colh .short{display:none} }
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{transition:none!important} }
+.film{max-width:960px;margin:40px auto 0}
+.film video{width:100%;display:block;aspect-ratio:16/9;border-radius:18px;background:#06080d;box-shadow:0 24px 60px rgba(27,38,64,.22);border:1px solid var(--rule)}
 </style>
 </head>
 <body>
@@ -281,6 +283,12 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
       <div class="stat" role="listitem"><b>177 h</b><span>of audio</span></div>
       <div class="stat" role="listitem"><b>8K–64K</b><span>context budgets</span></div>
       <div class="stat" role="listitem"><b>15</b><span>LALMs evaluated</span></div>
+    </div>
+
+    <div class="film">
+      <video controls preload="metadata" playsinline poster="static/video/poster.jpg">
+        <source src="static/video/voxmem.mp4" type="video/mp4">
+      </video>
     </div>
   </div>
 </header>
