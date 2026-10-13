@@ -225,6 +225,86 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
 @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{transition:none!important} }
 .film{max-width:960px;margin:40px auto 0}
 .film video{width:100%;display:block;aspect-ratio:16/9;border-radius:18px;background:#06080d;box-shadow:0 24px 60px rgba(27,38,64,.22);border:1px solid var(--rule)}
+/* listen demo */
+.ls-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ls-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.ls-tab{font:inherit;font-size:14.5px;cursor:pointer;background:#fff;border:1px solid var(--rule);border-radius:999px;padding:7px 14px;color:var(--ink);display:inline-flex;align-items:center;gap:8px;transition:box-shadow .15s,transform .15s}
+.ls-tab small{font-size:11.5px;color:var(--muted);font-weight:500}
+.ls-tab:hover{transform:translateY(-1px)}
+.ls-tab[aria-selected="true"]{box-shadow:0 0 0 2px var(--ink);border-color:var(--ink)}
+.ls-tab:focus-visible,.ls-play:focus-visible,.ls-tick:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.ls-mode button svg{width:15px;height:15px;vertical-align:-2px;margin-right:6px;fill:currentColor}
+.ls-card{--c:var(--accent);background:#fff;border:1px solid var(--rule);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px 24px;border-top:4px solid var(--c)}
+.ls-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:12px}
+.ls-op{font-weight:600;color:var(--ink-2)}
+.ls-meta{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.ls-track{display:flex;gap:2px;height:22px;align-items:stretch;margin-bottom:20px}
+.ls-tick{flex:1;border-radius:2px;background:#E4E8F0}
+.ls-tick.evidence{background:var(--c)}
+.ls-tick[data-s]{cursor:pointer}
+.ls-tick.distractor{background:color-mix(in srgb,var(--c) 35%,#fff)}
+.ls-tick.q{background:var(--ink);flex:0 0 10px}
+.ls-turns{display:grid;gap:14px}
+.ls-turn,.ls-q{border:1px solid var(--rule);border-radius:12px;padding:12px 14px;transition:box-shadow .3s}
+.ls-turn.evidence{border-left:4px solid var(--c)}
+.ls-turn.distractor{border-left:4px solid color-mix(in srgb,var(--c) 35%,#fff)}
+.ls-turn.flash{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 45%,#fff)}
+.ls-q{margin-top:18px;background:var(--bg-soft);border-color:color-mix(in srgb,var(--ink) 18%,#fff)}
+.ls-when{font-size:13px;color:var(--muted);margin-bottom:8px}
+.ls-when b{color:var(--ink);font-weight:700}
+.ls-role{font-family:var(--mono);font-size:11.5px;background:var(--bg-soft);border:1px solid var(--rule);border-radius:6px;padding:1px 6px;margin-left:4px}
+.ls-row{display:flex;align-items:center;gap:12px}
+.ls-play{flex:none;width:40px;height:40px;border-radius:50%;border:0;cursor:pointer;background:var(--c);color:#fff;display:grid;place-items:center;transition:transform .15s}
+.ls-play:hover{transform:scale(1.06)}
+.ls-play svg{width:18px;height:18px;fill:currentColor}
+.ls-play .s,.ls-row.playing .ls-play .p{display:none}
+.ls-row.playing .ls-play .s{display:block}
+.ls-wave{position:relative;flex:1;min-width:0;height:44px;cursor:pointer}
+.ls-wave canvas{width:100%;height:100%;display:block}
+.ls-dur{position:absolute;right:0;bottom:-16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ls-removed{display:none;position:absolute;inset:6px 0;border-radius:8px;align-items:center;justify-content:center;font-family:var(--mono);font-size:12.5px;color:var(--muted);
+  background:repeating-linear-gradient(135deg,#F1F2F5 0 8px,#E8EAEF 8px 16px);border:1px dashed #CBD1DC}
+.ls-cue{flex:none;font-size:13px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border:1px solid color-mix(in srgb,var(--c) 45%,#fff);border-radius:999px;padding:4px 11px;white-space:nowrap}
+.ls-text{margin:12px 0 0;font-size:17px;line-height:1.5;color:var(--ink-2)}
+.ls-row.playing + .ls-text span[data-k]{color:#A3ABBB}
+.ls-text span.on{color:var(--ink)!important}
+.ls-spk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--v);background:color-mix(in srgb,var(--v) 12%,#fff);border-radius:6px;padding:1px 8px 1px 6px;margin-right:8px;vertical-align:2px}
+.ls-spk i{width:8px;height:8px;border-radius:50%;background:var(--v)}
+.ls-spk .t{display:none}
+.ls-reply{margin:8px 0 0;font-size:14.5px;color:var(--muted)}
+.ls-reply span{font-family:var(--mono);font-size:11.5px;color:var(--muted);border:1px solid var(--rule);border-radius:5px;padding:0 5px;margin-right:8px}
+.ls-reveal-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px}
+.ls-reveal{cursor:pointer;font:inherit;font-weight:600}
+.ls-hint{font-size:14px;color:var(--muted)}
+.ls-answers{margin-top:18px}
+.ls-gold{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;font-size:18px}
+.ls-gold span{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--accent);border-radius:6px;padding:2px 8px}
+.ls-models{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ls-model{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;opacity:.6;transition:opacity .2s,box-shadow .2s}
+.ls-model.current{opacity:1;box-shadow:0 0 0 2px var(--ink)}
+.ls-mh{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:var(--ink-2)}
+.ls-model p{margin:8px 0 0;font-size:15px;color:var(--ink);font-family:var(--serif)}
+.ls-verdict{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:1px 7px}
+.ls-verdict.ok{color:#11734A;background:#DDF5E9} .ls-verdict.no{color:#B42318;background:#FDE4E1}
+.ls-reveal-row[hidden],.ls-answers[hidden]{display:none}
+.ls-cut{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.ls-note{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+/* transcript-only mode: the words survive, everything else goes */
+.text-mode .ls-play,.text-mode .ls-wave canvas,.text-mode .ls-dur,.text-mode .ls-cue{display:none}
+.text-mode .ls-removed{display:flex}
+.text-mode .ls-wave{cursor:default;height:34px}
+.text-mode .ls-spk{--v:#8A93A6!important}
+.text-mode .ls-spk .a{display:none} .text-mode .ls-spk .t{display:inline}
+.text-mode .ls-text span[data-k]{color:var(--ink)}
+@media (max-width:600px){
+  .ls-card{padding:16px 14px 18px}
+  .ls-meta{margin-left:0;width:100%}
+  .ls-row{flex-wrap:wrap}
+  .ls-wave{flex:1 1 calc(100% - 52px)}
+  .ls-cue{margin-left:52px}
+  .ls-models{grid-template-columns:1fr}
+  .ls-text{font-size:16px}
+}
 </style>
 </head>
 <body>
@@ -238,6 +318,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
     </a>
     <ul>
       <li><a href="#overview">Overview</a></li>
+      <li><a href="#listen">Listen</a></li>
       <li><a href="#taxonomy">Taxonomy</a></li>
       <li><a href="#leaderboard">Leaderboard</a></li>
       <li><a href="#findings">Findings</a></li>
@@ -309,9 +390,27 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   </div>
 </section>
 
-<section id="taxonomy" class="soft">
+<section id="listen" class="soft">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">02</span><h2>Two axes of spoken memory</h2></div>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Hear the difference</h2></div>
+    <p class="lede">Each example below is a real VoxMem item. Play the turns that hold the answer, then switch to <b>Transcript only</b>: the words survive, but who spoke, how they sounded and what could be heard do not.</p>
+    <div id="listen-demo">
+      <div class="ls-controls">
+        <div class="ls-tabs" role="tablist" aria-label="Examples"></div>
+        <div class="seg ls-mode" role="group" aria-label="Input">
+          <button type="button" data-mode="audio" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>Full audio</button>
+          <button type="button" data-mode="text" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 4h16v2H4zm0 4h10v2H4zm0 4h13v2H4z"/></svg>Transcript only</button>
+        </div>
+      </div>
+      <div class="ls-card"></div>
+      <p class="ls-note">Real 8K items, chosen to illustrate the effect: the full-audio model gets each of these right, which it does not do on every item. Answers are from Gemini-3.7-Flash given the full audio history, and from the same model given verbatim transcripts with the same always-answer instruction.</p>
+    </div>
+  </div>
+</section>
+
+<section id="taxonomy">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Two axes of spoken memory</h2></div>
     <p class="lede"><b>Acoustic evidence</b> specifies <em>what</em> must be recovered from the history; <b>memory operation</b> specifies <em>how</em> it must be used. Their valid combinations form 15 cells. Select a cell to see details.</p>
     <div class="tax-controls">
       <div class="seg" role="group" aria-label="Value shown in the matrix">
@@ -346,9 +445,9 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   </div>
 </section>
 
-<section id="leaderboard">
+<section id="leaderboard" class="soft">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">03</span><h2>Leaderboard</h2></div>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Leaderboard</h2></div>
     <p class="lede">Accuracy (%) over all 799 questions at each reference history budget, broken down by answer-critical evidence type. Answer Refusal items are included, with appropriate abstention counted as correct. Click a column header to sort.</p>
     <div class="lb-controls">
       <div class="seg" role="group" aria-label="Context length">
@@ -384,9 +483,9 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   </div>
 </section>
 
-<section id="findings" class="soft">
+<section id="findings">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">04</span><h2>Key findings</h2></div>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Key findings</h2></div>
     <p class="lede">Each question and its required evidence are held fixed across context budgets, so changes in accuracy across lengths reflect the history, not the question.</p>
     <div class="findings">
       <article class="finding">
@@ -437,9 +536,9 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   </div>
 </section>
 
-<section id="construction">
+<section id="construction" class="soft">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">05</span><h2>How VoxMem is built</h2></div>
+    <div class="sec-head"><span class="sec-num">06</span><h2>How VoxMem is built</h2></div>
     <p class="lede">Questions are planned from an operation, an evidence type and an answer; evidence is realized as spoken dialogue with controlled acoustic cues; histories are built at 8K–64K with the question and evidence fixed; multi-stage quality control validates each step.</p>
     <figure><a href="static/images/workflow.jpg" title="Open full size"><img src="static/images/workflow.jpg" width="2400" height="1200" alt="The VoxMem construction pipeline: task and evidence design, dialogue and audio realization, variants and context assembly with haystack and filler sessions, and validation into the final benchmark."></a>
       <figcaption><b>Construction pipeline.</b> Histories nest across budgets, so a length comparison holds the item fixed and varies only the surrounding sessions.</figcaption>
@@ -467,9 +566,9 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-betw
   </div>
 </section>
 
-<section id="start" class="soft">
+<section id="start">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">06</span><h2>Get started</h2></div>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Get started</h2></div>
     <p class="lede">The data streams from the Hugging Face Hub; pick a context length and, optionally, a single evidence type. See the <a href="https://github.com/swagshaw/voxmem#readme">README</a> for local models, cluster runs and the output format.</p>
 <pre><span class="c"># install</span>
 pip install -r requirements.txt
@@ -487,9 +586,9 @@ python score_voxmembench.py --predictions predictions_32k.jsonl \
   </div>
 </section>
 
-<section id="bibtex">
+<section id="bibtex" class="soft">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">07</span><h2>BibTeX</h2></div>
+    <div class="sec-head"><span class="sec-num">08</span><h2>BibTeX</h2></div>
     <p class="lede">If you find VoxMem useful, please cite:</p>
     <div class="bib">
 <pre id="bib-text">@article{xiao2026voxmem,
@@ -677,5 +776,7 @@ python score_voxmembench.py --predictions predictions_32k.jsonl \
   });
 })();
 </script>
+<script src="static/demo/demo.js"></script>
+<script src="static/demo/listen.js"></script>
 </body>
 </html>
