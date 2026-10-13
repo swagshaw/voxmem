@@ -25,8 +25,15 @@
 > VoxMem crosses four acoustic evidence types with four memory operations over multi-session spoken histories from 8K to 64K tokens.
 > Across 15 LALMs, no model exceeds 40% overall accuracy at 32K, and memory for non-lexical information lags far behind memory for words.
 
+<p align="center">
+  <a href="https://swagshaw.github.io/voxmem/static/video/voxmem.mp4"><img src="docs/static/video/cover.jpg" width="100%" alt="VoxMem film (47 s): click to play"></a>
+  <br>
+  <sub>▶ 47-second film &nbsp;·&nbsp; 🎧 <a href="https://swagshaw.github.io/voxmem/#listen">Hear the difference</a>: real items, full audio vs transcript only</sub>
+</p>
+
 ## News
 
+- **2026-10** — Project page adds a short film and an interactive [listening demo](https://swagshaw.github.io/voxmem/#listen).
 - **2026-09** — Paper released on [arXiv](https://arxiv.org/abs/2609.32607); code and data released.
 
 ## Overview
