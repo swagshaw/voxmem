@@ -144,7 +144,10 @@ for the same item twice. `--regrade` forces a fresh pass.
 Answers are open ended, so an LLM judge settles equivalence. **The judge sees
 only the question, the gold and the response** — never the audio, never the
 history — so it cannot answer the item itself. Abstaining on an answerable item
-counts as incorrect.
+counts as incorrect. The denominator is every item: a generation failure
+(`response` is null) or a judge reply without a parseable verdict also counts
+as incorrect, as in the paper. The `graded` column shows how many items received
+a verdict.
 
 The report also breaks accuracy down by context length and by the 15 evidence
 type × memory operation cells. Report those: the aggregate hides that the
@@ -162,8 +165,8 @@ evidence type x memory operation
 ```
 
 > `--judge exact-match` needs no API key, but only grades `categorical`,
-> `yes_no` and `number` items and grades them more strictly than the real
-> metric. Use it for smoke tests, not for numbers you intend to publish.
+> `yes_no` and `number` items (the rest stay ungraded and count as incorrect)
+> and grades them more strictly than the real metric. Use it for smoke tests, not for numbers you intend to publish.
 
 ## Local models
 
