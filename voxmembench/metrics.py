@@ -11,14 +11,21 @@ STRATA = {"answer": "answerable", "insufficient_evidence": "answer_refusal"}
 
 
 def _rate(rows):
+    """Accuracy over every row in the bucket.
+
+    A row without a verdict -- a generation failure (``response`` is None) or a
+    judge reply with no parseable verdict -- counts as incorrect, as in the
+    paper (Appendix C). ``graded`` is reported so such rows stay visible.
+    """
+    if not rows:
+        return {"n": 0, "graded": 0, "ungraded": 0, "accuracy": None}
     graded = [r for r in rows if r.get("verdict") is not None]
-    if not graded:
-        return {"n": len(rows), "graded": 0, "accuracy": None}
     correct = sum(1 for r in graded if r["verdict"])
     return {
         "n": len(rows),
         "graded": len(graded),
-        "accuracy": round(correct / len(graded), 4),
+        "ungraded": len(rows) - len(graded),
+        "accuracy": round(correct / len(rows), 4),
     }
 
 
